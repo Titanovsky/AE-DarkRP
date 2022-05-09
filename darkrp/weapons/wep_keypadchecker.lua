@@ -1,0 +1,1 @@
+local C, RegEnt = Ambi.General.Global.Colors, Ambi.RegEntity
