@@ -56,7 +56,7 @@ if not Ambi.DarkRP.Config.jobs_create_defaults then return end
 if not Ambi.DarkRP.Config.doors_categories_create_defaults then return end
 
 hook.Add( 'InitPostEntity', 'Ambi.DarkRP.AddDefaultsCategory', function()
-    Ambi.DarkRP.AddDoorCategory( 'Мэрия', { 'j_mayor' } )
-    Ambi.DarkRP.AddDoorCategory( 'Полицейский Участок', { 'j_police', 'j_sheriff', 'j_swat', 'j_mayor' } )
-    Ambi.DarkRP.AddDoorCategory( 'Тюрьма', { 'j_sheriff', 'j_mayor' } )
+    Ambi.DarkRP.AddDoorCategory( 'Мэрия', { 'TEAM_MAYOR' } )
+    Ambi.DarkRP.AddDoorCategory( 'Полицейский Участок', { 'TEAM_POLICE', 'TEAM_SHERIFF', 'TEAM_SWAT', 'TEAM_MAYOR' } )
+    Ambi.DarkRP.AddDoorCategory( 'Тюрьма', { 'TEAM_SHERIFF', 'TEAM_MAYOR' } )
 end )

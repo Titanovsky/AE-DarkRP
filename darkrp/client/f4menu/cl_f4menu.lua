@@ -26,7 +26,7 @@ function Ambi.DarkRP.OpenF4Menu()
     local top_header_ambi_market = GUI.DrawButton( frame, frame:GetWide() / 4, 22, 0, 0, nil, nil, nil, function()
         LocalPlayer():EmitSound( 'buttons/button15.wav', nil, 135, .1 )
 
-        gui.OpenURL( 'https://vk.com/ambi_market' ) -- Заменить на статью про DarkRP
+        gui.OpenURL( 'https://vk.com/@ambi_market-guide-how-to-create-darkrp' ) -- Заменить на статью про DarkRP
     end, function( self, w, h ) 
         Draw.Box( w - 2, h, 0, 0, self.color, 8, 'top-left' )
         Draw.Box( 2, h, w - 2, 0, COLOR_LINE, 8 )

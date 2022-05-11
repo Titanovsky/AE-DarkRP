@@ -232,7 +232,7 @@ function Ambi.DarkRP.AddJob( sClass, tJob )
     job.class = sClass
 
     Ambi.DarkRP.jobs[ sClass ] = job
-    table.Merge( team.GetAllTeams()[ index ], job )
+    team.GetAllTeams()[ index ] = job
 
     if Ambi.ChatCommands then 
         Ambi.ChatCommands.AddCommand( job.command, 'DarkRP | Jobs', 'Получить работу: '..job.name, 1, function( ePly, tArgs ) 
@@ -409,110 +409,108 @@ local WEAPONS_MEDIC = {
     'med_kit'
 }
 
-hook.Add( 'InitPostEntity', 'Ambi.DarkRP.AddDefaultsJobs', function()
-    Add( 'TEAM_CITIZEN', { 
-        name = 'Житель', 
-        command = 'citizen', 
-        models = MODELS_CITIZEN,
-        max = 0,
-        category = 'Жители', 
-        color = C.AMBI_GREEN,
-    } )
+Add( 'TEAM_CITIZEN', { 
+    name = 'Житель', 
+    command = 'citizen', 
+    models = MODELS_CITIZEN,
+    max = 0,
+    category = 'Жители', 
+    color = C.AMBI_GREEN,
+} )
 
-    Add( 'TEAM_MEDIC', { 
-        name = 'Врач', 
-        command = 'medic', 
-        max = 4,
-        category = 'Жители', 
-        models = MODELS_MEDICS,
-        weapons = WEAPONS_MEDIC,
-        demote = true,
-        color = C.RU_PINK,
-    } )
+Add( 'TEAM_MEDIC', { 
+    name = 'Врач', 
+    command = 'medic', 
+    max = 4,
+    category = 'Жители', 
+    models = MODELS_MEDICS,
+    weapons = WEAPONS_MEDIC,
+    demote = true,
+    color = C.RU_PINK,
+} )
 
-    Ambi.DarkRP.AddJob( 'TEAM_POLICE', { 
-        name = 'Полицейский', 
-        command = 'police', 
-        category = 'Полиция', 
-        description = 'Сотрудник правопорядка', 
-        color = C.AMBI_BLUE, 
-        police = true,
-        weapons = WEAPONS_POLICE, 
-        demote = true,
-        vote = true,
-        models = { 'models/player/police.mdl', 'models/player/police_fem.mdl' } 
-    } )
+Add( 'TEAM_POLICE', { 
+    name = 'Полицейский', 
+    command = 'police', 
+    category = 'Полиция', 
+    description = 'Сотрудник правопорядка', 
+    color = C.AMBI_BLUE, 
+    police = true,
+    weapons = WEAPONS_POLICE, 
+    demote = true,
+    vote = true,
+    models = { 'models/player/police.mdl', 'models/player/police_fem.mdl' } 
+} )
 
-    Ambi.DarkRP.AddJob( 'TEAM_SWAT', { 
-        name = 'Спецназ', 
-        command = 'swat', 
-        category = 'Полиция', 
-        description = 'Отряд Специального Назначения, подчиняется Шерифу', 
-        from = 'TEAM_POLICE',
-        color = C.AMBI_BLUE, 
-        police = true,
-        weapons = WEAPONS_SWAT, 
-        demote = true,
-        models = MODELS_SWAT,
-    } )
+Add( 'TEAM_SWAT', { 
+    name = 'Спецназ', 
+    command = 'swat', 
+    category = 'Полиция', 
+    description = 'Отряд Специального Назначения, подчиняется Шерифу', 
+    from = 'TEAM_POLICE',
+    color = C.AMBI_BLUE, 
+    police = true,
+    weapons = WEAPONS_SWAT, 
+    demote = true,
+    models = MODELS_SWAT,
+} )
 
-    Ambi.DarkRP.AddJob( 'TEAM_SHERIFF', { 
-        name = 'Шериф', 
-        command = 'sheriff', 
-        category = 'Полиция', 
-        description = 'Шериф города. Полностью руководит Полицейским Участком', 
-        color = C.AMBI_HARD_BLUE, 
-        police = true,
-        weapons = WEAPONS_SHERIFF, 
-        max = 1,
-        vote = true,
-        demote = true,
-        models = { 'models/player/barney.mdl' },
-    } )
+Add( 'TEAM_SHERIFF', { 
+    name = 'Шериф', 
+    command = 'sheriff', 
+    category = 'Полиция', 
+    description = 'Шериф города. Полностью руководит Полицейским Участком', 
+    color = C.AMBI_HARD_BLUE, 
+    police = true,
+    weapons = WEAPONS_SHERIFF, 
+    max = 1,
+    vote = true,
+    demote = true,
+    models = { 'models/player/barney.mdl' },
+} )
 
-    Ambi.DarkRP.AddJob( 'TEAM_GUNDEALER', { 
-        name = 'Продавец Оружия', 
-        command = 'gundealer', 
-        category = 'Жители', 
-        description = 'Житель города, но имеющий право продавать оружие', 
-        color = C.AMBI_CARROT, 
-        max = 4,
-        demote = true,
-        models = { 'models/player/monk.mdl' },
-    } )
+Add( 'TEAM_GUNDEALER', { 
+    name = 'Продавец Оружия', 
+    command = 'gundealer', 
+    category = 'Жители', 
+    description = 'Житель города, но имеющий право продавать оружие', 
+    color = C.AMBI_CARROT, 
+    max = 4,
+    demote = true,
+    models = { 'models/player/monk.mdl' },
+} )
 
-    Ambi.DarkRP.AddJob( 'TEAM_BUSINESSMAN', { 
-        name = 'Предприниматель', 
-        command = 'businessman', 
-        category = 'Жители', 
-        description = 'Житель города, способный покупать больше дверей', 
-        color = C.AMBI_SALAT, 
-        max = 4,
-        doors_max = 10,
-        models = { 'models/player/magnusson.mdl' },
-    } )
+Add( 'TEAM_BUSINESSMAN', { 
+    name = 'Предприниматель', 
+    command = 'businessman', 
+    category = 'Жители', 
+    description = 'Житель города, способный покупать больше дверей', 
+    color = C.AMBI_SALAT, 
+    max = 4,
+    doors_max = 10,
+    models = { 'models/player/magnusson.mdl' },
+} )
 
-    Ambi.DarkRP.AddJob( 'TEAM_GANGSTER', { 
-        name = 'Бандит', 
-        command = 'gangster', 
-        category = 'Криминал', 
-        description = 'Самый низкоранговый бандит. Нарушает закон в одиночку, либо с группой', 
-        color = C.FLAT_GRAY, 
-        weapons = { 'lockpick' },
-        models = MODELS_GANGSTERS,
-    } )
+Add( 'TEAM_GANGSTER', { 
+    name = 'Бандит', 
+    command = 'gangster', 
+    category = 'Криминал', 
+    description = 'Самый низкоранговый бандит. Нарушает закон в одиночку, либо с группой', 
+    color = C.FLAT_GRAY, 
+    weapons = { 'lockpick' },
+    models = MODELS_GANGSTERS,
+} )
 
-    Ambi.DarkRP.AddJob( 'TEAM_MAYOR', { 
-        name = 'Мэр', 
-        command = 'mayor', 
-        category = 'Мэрия', 
-        description = 'Администратор города: управляет полицией', 
-        color = C.FLAT_DARK_RED, 
-        max = 1, 
-        demote_after_death = true, 
-        mayor = true,
-        weapons = WEAPONS_MAYOR,
-        vote = true,
-        models = { 'models/player/breen.mdl', 'models/player/mossman_arctic.mdl' },
-    } )
-end )
+Add( 'TEAM_MAYOR', { 
+    name = 'Мэр', 
+    command = 'mayor', 
+    category = 'Мэрия', 
+    description = 'Администратор города: управляет полицией', 
+    color = C.FLAT_DARK_RED, 
+    max = 1, 
+    demote_after_death = true, 
+    mayor = true,
+    weapons = WEAPONS_MAYOR,
+    vote = true,
+    models = { 'models/player/breen.mdl', 'models/player/mossman_arctic.mdl' },
+} )

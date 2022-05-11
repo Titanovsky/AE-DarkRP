@@ -1,4 +1,6 @@
-local VERSION = '1.0'
+local VERSION = '1.1'
+
+if game.SinglePlayer() then return end
 
 local function CheckVersion()
     http.Fetch( 'https://raw.githubusercontent.com/Titanovsky/AE-DarkRP/main/VERSION.md', function( sBody ) 
