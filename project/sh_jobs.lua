@@ -4,6 +4,7 @@ if not Ambi.DarkRP then return end
 
 local C = Ambi.Packages.Out( 'colors' )
 local AddJob = Ambi.DarkRP.AddJob
+local SimpleAddJob = Ambi.DarkRP.SimpleAddJob
 
 -- ----------------------------------------------------------------------------------------------------------------------------
 -- AddJob( 'TEAM_EXAMPLE', { 
@@ -13,3 +14,6 @@ local AddJob = Ambi.DarkRP.AddJob
 --     max = 0,
 --     category = 'Категория', 
 -- } )
+
+-- SimpleAddJob( sClass, sName, sCommand, sCategory, sDescription, nMax, nSalary, bVote, bLicense, bDemote, cColor, tModels, tWeapons, tOther )
+-- SimpleAddJob( 'TEAM_EXAMPLE', 'Название', 'job1', 'Категория', 'Описание', 0, false, false, true, Color( 255, 0, 0 ), { 'models/player/Group03m/male_07.mdl' } )

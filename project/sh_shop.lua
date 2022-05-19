@@ -4,6 +4,7 @@ if not Ambi.DarkRP then return end
 
 local C = Ambi.Packages.Out( 'colors' )
 local AddItem = Ambi.DarkRP.AddShopItem
+local SimpleAddItem = Ambi.DarkRP.SimpleAddJob
 
 -- ----------------------------------------------------------------------------------------------------------------------------
 -- AddItem( 'money_printer', { 
@@ -15,3 +16,6 @@ local AddItem = Ambi.DarkRP.AddShopItem
 --     max = 4,
 --     order = 100,
 -- } )
+
+-- SimpleAddShopItem( sClass, sName, sCategory, sDescription, sClassEntity, sModel, nMax, nPrice, nDelay, tOther )
+-- SimpleAddShopItem( 'money_printer', 'Денежный Принтер', 'Денежные Принтеры', 'Описание', 'money_printer', 'models/props_c17/consolebox01a.mdl', 4, 2000 )

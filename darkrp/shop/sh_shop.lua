@@ -119,6 +119,29 @@ function Ambi.DarkRP.RemoveShopItem( sClass )
     hook.Call( '[Ambi.DarkRP.RemovedShopItem]', nil, sClass, old_item )
 end
 
+function Ambi.DarkRP.SimpleAddShopItem( sClass, sName, sCategory, sDescription, sClassEntity, sModel, nMax, nPrice, nDelay, tOther )
+    if not sClass then return end
+
+    local tab = {
+        name = sName,
+        category = sCategory,
+        description = sDescription,
+        ent = sClassEntity,
+        model = sModel,
+        max = nMax,
+        price = nPrice,
+        delay = nDelay
+    }
+
+    if tOther then
+        for key, value in pairs( tOther ) do
+            tab[ key ] = value
+        end
+    end
+
+    return Ambi.DarkRP.AddShopItem( sClass, tab )
+end
+
 function Ambi.DarkRP.GetShopItem( sClass )
     return Ambi.DarkRP.shop[ sClass or '' ]
 end

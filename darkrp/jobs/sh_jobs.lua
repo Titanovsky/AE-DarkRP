@@ -268,6 +268,33 @@ function Ambi.DarkRP.RemoveJob( sClass )
     hook.Call( '[Ambi.DarkRP.RemovedJob]', nil, sClass, job )
 end
 
+function Ambi.DarkRP.SimpleAddJob( sClass, sName, sCommand, sCategory, sDescription, nMax, nSalary, bVote, bLicense, bDemote, cColor, tModels, tWeapons, tOther )
+    if not sClass then return end
+    
+    local tab = {
+        name = sName,
+        command = sCommand,
+        category = sCategory,
+        description = sDescription,
+        max = nMax,
+        salary = nSalary,
+        vote = bVote,
+        license = bLicense,
+        demote = bDemote,
+        color = cColor,
+        models = tModels,
+        weapons = tWeapons,
+    }
+
+    if tOther then
+        for key, value in pairs( tOther ) do
+            tab[ key ] = value
+        end
+    end
+
+    return Ambi.DarkRP.AddJob( sClass, tab )
+end
+
 function Ambi.DarkRP.GetJobs()
     return Ambi.DarkRP.jobs
 end
