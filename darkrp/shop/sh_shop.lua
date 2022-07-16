@@ -3,6 +3,7 @@ local PLAYER = FindMetaTable( 'Player' )
 local ENTITY = FindMetaTable( 'Entity' )
 
 Ambi.DarkRP.shop = Ambi.DarkRP.shop or {}
+Ambi.DarkRP.shop_commands = Ambi.DarkRP.shop_commands or {}
 
 -- ================= Entity =========================================================================== --
 function ENTITY:GetShopBuyer()
@@ -38,7 +39,7 @@ local function FillEmptyProperties( sClass, tItem )
     tItem.delay         = tItem.delay or default.delay
     tItem.max           = tItem.max or default.max
     tItem.order         = ( tItem.order or tItem.sortOrder ) or default.order
-    tItem.cmd           = tItem.cmd and Ambi.DarkRP.Config.shop_buy_command..' '..tItem.cmd or Ambi.DarkRP.Config.shop_buy_command..' '..sClass
+    tItem.cmd           = tItem.cmd or 'buy'..sClass
 
     return tItem 
 end
@@ -100,6 +101,12 @@ function Ambi.DarkRP.AddShopItem( sClass, tItem )
     
     Ambi.DarkRP.shop[ sClass ] = tItem
 
+    for k, class in pairs( Ambi.DarkRP.shop_commands ) do
+        if ( class == sClass ) then Ambi.DarkRP.shop_commands[ k ] = nil break end
+    end
+    
+    Ambi.DarkRP.shop_commands[ '/'..item.cmd ] = sClass 
+
     print( '[DarkRP] Created shop item: '..sClass )
 
     hook.Call( '[Ambi.DarkRP.AddedShopItem]', nil, sClass, item )
@@ -140,6 +147,34 @@ function Ambi.DarkRP.SimpleAddShopItem( sClass, sName, sCategory, sDescription, 
     end
 
     return Ambi.DarkRP.AddShopItem( sClass, tab )
+end
+
+function Ambi.DarkRP.AddShipmentFromShopWeapon( sClass, sName, sCategory, sDescription, nCount, nPrice, tOther )
+    local item = Ambi.DarkRP.GetShopItem( sClass )
+    if not item then return end
+    if not item.weapon then return end
+
+    local class_weapon = isbool( item.weapon ) and item.ent or item.weapon
+
+    local tab = { 
+        name = sName, 
+        ent = 'spawned_shipment',
+        model = 'models/items/item_item_crate.mdl',
+        category = sCategory,
+        description = sDescription,
+        price = nPrice,
+        shipment = {
+            title = sName,
+            class = class_weapon,
+            count = nCount,
+            model = item.model,
+            is_weapon = true,
+        }
+    }
+
+    for k, v in pairs( tOther or {} ) do tab[ k ] = v end
+
+    return Ambi.DarkRP.AddShopItem( 'shipment_'..sClass, tab )
 end
 
 function Ambi.DarkRP.GetShopItem( sClass )

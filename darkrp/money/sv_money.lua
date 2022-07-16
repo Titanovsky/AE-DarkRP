@@ -98,9 +98,9 @@ hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.InitialMoneyBalance', function( ePl
             local sid = ePly:SteamID()
             local balance = SQL.Select( DB, 'Money', 'SteamID', sid ) 
             if not balance then 
-                SQL.Insert( DB, 'SteamID, Money', '%s, %i', sid, 0 ) 
+                balance = Ambi.DarkRP.Config.money_start
 
-                balance = 0
+                SQL.Insert( DB, 'SteamID, Money', '%s, %i', sid, balance ) 
             else
                 balance = tonumber( balance )
             end

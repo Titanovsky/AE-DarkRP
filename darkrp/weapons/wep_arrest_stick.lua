@@ -83,7 +83,7 @@ function SWEP:PrimaryAttack()
         if not Ambi.DarkRP.Config.police_system_arrest_enable then owner:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Отключена возможность арестовать игрока!' ) return end
 
         if Ambi.DarkRP.Config.police_system_arrest_can_only_police and not owner:GetJobTable().police then owner:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваша работа не имеет право арестовать!' ) return end
-        if Ambi.DarkRP.Config.police_system_arrest_can_other_police and ply:GetJobTable().police then owner:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Данного игрока нельзя арестовать!' ) return end
+        if Ambi.DarkRP.Config.police_system_arrest_can_other_police and ply:IsPolice() then owner:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Данного игрока нельзя арестовать!' ) return end
         if Ambi.DarkRP.Config.police_system_arrest_only_wanted and not ply:IsWanted() then owner:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Можно арестовать только тех, кто в розыске!' ) return end
 
         if ply:IsArrested() then ply:Spawn() return end

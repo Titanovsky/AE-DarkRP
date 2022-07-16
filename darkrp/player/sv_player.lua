@@ -1,5 +1,4 @@
 local C, SQL = Ambi.General.Global.Colors, Ambi.SQL
-local DB = SQL.CreateTable( 'darkrp_alt_permajobs', 'SteamID, Class' )
 local PLAYER = FindMetaTable( 'Player' )
 -- --------------------------------------------------------------------------------------------------------
 

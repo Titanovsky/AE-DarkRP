@@ -2,6 +2,7 @@ local Gen = Ambi.General
 local PLAYER, C = FindMetaTable( 'Player' ), Ambi.General.Global.Colors
 
 Ambi.DarkRP.jobs = Ambi.DarkRP.jobs or {}
+Ambi.DarkRP.jobs_commands = Ambi.DarkRP.jobs_commands or {}
 
 -- ================= Player =========================================================================== --
 function PLAYER:GetJob()
@@ -234,13 +235,11 @@ function Ambi.DarkRP.AddJob( sClass, tJob )
     Ambi.DarkRP.jobs[ sClass ] = job
     team.GetAllTeams()[ index ] = job
 
-    if Ambi.ChatCommands then 
-        Ambi.ChatCommands.AddCommand( job.command, 'DarkRP | Jobs', 'Получить работу: '..job.name, 1, function( ePly, tArgs ) 
-            if not Ambi.DarkRP.Config.jobs_change_on_chat_command then return end
-
-            return ePly:SetJob( sClass )
-        end )
+    for k, class in pairs( Ambi.DarkRP.jobs_commands ) do
+        if ( class == sClass ) then Ambi.DarkRP.jobs_commands[ k ] = nil break end
     end
+    
+    Ambi.DarkRP.jobs_commands[ '/'..job.command ] = sClass 
 
     _G[ sClass ] = index
     
@@ -257,7 +256,7 @@ function Ambi.DarkRP.RemoveJob( sClass )
 
     local index = job.index
 
-    Ambi.ChatCommands.RemoveCommand( job.command )
+    Ambi.DarkRP.jobs_commands[ '/'..job.command ] = nil
 
     Ambi.DarkRP.jobs[ sClass ] = nil
     _G[ sClass ] = nil

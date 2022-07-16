@@ -24,132 +24,165 @@ function Ambi.DarkRP.ClearChangedConfig()
 end
 
 -- ----------------------------------------------------------------------------------------------------------------------------------------
-net.AddString( 'ambi_darkrp_configurator_set_config' )
-net.Receive( 'ambi_darkrp_configurator_set_config', function( _, ePly ) 
-    if not Ambi.DarkRP.configurator_enable then ePly:Kick( '[DarkRP] Конфигуратор выключен [Set]' ) return end
-    if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Вы не супер админ для конфигуратора [Set]' ) return end
+-- net.AddString( 'ambi_darkrp_configurator_set_config' )
+-- net.Receive( 'ambi_darkrp_configurator_set_config', function( _, ePly ) 
+--     if not Ambi.DarkRP.configurator_enable then ePly:Kick( '[DarkRP] Конфигуратор выключен [Set]' ) return end
+--     if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Вы не супер админ для конфигуратора [Set]' ) return end
 
-    local index = net.ReadString()
-    if ( Ambi.DarkRP.Config[ index ] == nil ) then return end
+--     local index = net.ReadString()
+--     if ( Ambi.DarkRP.Config[ index ] == nil ) then return end
 
-    local value = net.ReadTable()
-    if ( value.value != nil ) then value = value.value end -- Если только одно значение
+--     local value = net.ReadTable()
+--     if ( value.value != nil ) then value = value.value end -- Если только одно значение
 
-    local old_value = Ambi.DarkRP.Config[ index ]
-    Ambi.DarkRP.Config[ index ] = value
+--     local old_value = Ambi.DarkRP.Config[ index ]
+--     Ambi.DarkRP.Config[ index ] = value
 
-    changed_config[ index ] = value
+--     changed_config[ index ] = value
 
-    net.Start( 'ambi_darkrp_configurator_set_config_send_new_players' )
-        net.WriteTable( changed_config )
-    net.Send( ePly )
-end )
+--     net.Start( 'ambi_darkrp_configurator_set_config_send_new_players' )
+--         net.WriteTable( changed_config )
+--     net.Send( ePly )
+-- end )
 
-net.AddString( 'ambi_darkrp_configurator_set_config_table' )
-net.Receive( 'ambi_darkrp_configurator_set_config_table', function( _, ePly ) 
-    if not Ambi.DarkRP.configurator_enable then ePly:Kick( '[DarkRP] Конфигуратор выключен [SetTable]' ) return end
-    if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Вы не супер админ для конфигуратора [SetTable]' ) return end
+-- net.AddString( 'ambi_darkrp_configurator_set_config_table' )
+-- net.Receive( 'ambi_darkrp_configurator_set_config_table', function( _, ePly ) 
+--     if not Ambi.DarkRP.configurator_enable then ePly:Kick( '[DarkRP] Конфигуратор выключен [SetTable]' ) return end
+--     if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Вы не супер админ для конфигуратора [SetTable]' ) return end
 
-    local config = net.ReadTable()
+--     local config = net.ReadTable()
 
-    for i, v in pairs( config ) do
-        if not IsTable( v ) then -- TODO: Для таблиц там отдельная table.Equals нужна
-            if ( v == Ambi.DarkRP.Config[ i ] ) then continue end
-        end
+--     for i, v in pairs( config ) do
+--         if not IsTable( v ) then -- TODO: Для таблиц там отдельная table.Equals нужна
+--             if ( v == Ambi.DarkRP.Config[ i ] ) then continue end
+--         end
 
-        changed_config[ i ] = v
-    end
+--         changed_config[ i ] = v
+--     end
 
-    Ambi.DarkRP.Config = config
+--     Ambi.DarkRP.Config = config
 
-    net.Start( 'ambi_darkrp_configurator_set_config_send_new_players' )
-        net.WriteTable( config )
-    net.Send( ePly )
-end )
+--     net.Start( 'ambi_darkrp_configurator_set_config_send_new_players' )
+--         net.WriteTable( config )
+--     net.Send( ePly )
+-- end )
 
-net.AddString( 'ambi_darkrp_configurator_clear_config' )
-net.Receive( 'ambi_darkrp_configurator_clear_config', function( _, ePly ) 
-    if not Ambi.DarkRP.configurator_enable then ePly:Kick( '[DarkRP] Конфигуратор выключен [Clear]' ) return end
-    if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Вы не супер админ для конфигуратора [Clear]' ) return end
+-- net.AddString( 'ambi_darkrp_configurator_clear_config' )
+-- net.Receive( 'ambi_darkrp_configurator_clear_config', function( _, ePly ) 
+--     if not Ambi.DarkRP.configurator_enable then ePly:Kick( '[DarkRP] Конфигуратор выключен [Clear]' ) return end
+--     if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Вы не супер админ для конфигуратора [Clear]' ) return end
 
-    Ambi.DarkRP.ClearChangedConfig()
+--     Ambi.DarkRP.ClearChangedConfig()
 
-    net.Start( 'ambi_darkrp_configurator_set_config_send_new_players' )
-        net.WriteTable( Ambi.DarkRP.Config )
-    net.Send( ePly )
-end )
+--     net.Start( 'ambi_darkrp_configurator_set_config_send_new_players' )
+--         net.WriteTable( Ambi.DarkRP.Config )
+--     net.Send( ePly )
+-- end )
 
-net.AddString( 'ambi_darkrp_configurator_set_config_send_new_players' )
-hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SendNewConfigForNewPlayers', function( ePly ) 
-    if not changed_config then return end
+-- net.AddString( 'ambi_darkrp_configurator_set_config_send_new_players' )
+-- hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SendNewConfigForNewPlayers', function( ePly ) 
+--     if not changed_config then return end
     
-    net.Start( 'ambi_darkrp_configurator_set_config_send_new_players' )
-        net.WriteTable( changed_config )
-    net.Send( ePly )
-end )
+--     net.Start( 'ambi_darkrp_configurator_set_config_send_new_players' )
+--         net.WriteTable( changed_config )
+--     net.Send( ePly )
+-- end )
 
--- Jobs --
-net.AddString( 'ambi_darkrp_configurator_change_jobs' )
-net.Receive( 'ambi_darkrp_configurator_change_jobs', function( _, ePly ) 
-    if not Ambi.DarkRP.configurator_enable then ePly:Kick( '[DarkRP] Конфигуратор выключен!' ) return end
-    if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Вы не супер админ для конфигуратора!' ) return end
+-- -- Jobs --
+-- net.AddString( 'ambi_darkrp_configurator_change_jobs' )
+-- net.Receive( 'ambi_darkrp_configurator_change_jobs', function( _, ePly ) 
+--     if not Ambi.DarkRP.configurator_enable then ePly:Kick( '[DarkRP] Конфигуратор выключен!' ) return end
+--     if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Вы не супер админ для конфигуратора!' ) return end
 
-    local jobs = net.ReadTable()
+--     local jobs = net.ReadTable()
 
-    Ambi.DarkRP.jobs = jobs
+--     Ambi.DarkRP.jobs = jobs
 
-    net.Start( 'ambi_darkrp_configurator_send_changed_jobs' )
-        net.WriteTable( Ambi.DarkRP.GetJobs() )
-    net.Broadcast()
-end )
+--     -- workaround: cannot to send to clients type Function()
+--     local tab = {}
+--     for k, v in pairs( Ambi.DarkRP.GetJobs() ) do tab[ k ] = v end
 
-net.AddString( 'ambi_darkrp_configurator_send_changed_jobs' )
-hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SendChangedJobsForNewPlayers', function( ePly ) 
-    net.Start( 'ambi_darkrp_configurator_send_changed_jobs' )
-        net.WriteTable( Ambi.DarkRP.GetJobs() )
-    net.Send( ePly )
-end )
+--     for _, data in pairs( tab ) do
+--         for k, v in pairs( data ) do
+--             if isfunction( v ) then data[ k ] = nil end
+--         end
+--     end
 
--- Shop --
-net.AddString( 'ambi_darkrp_configurator_change_shop' )
-net.Receive( 'ambi_darkrp_configurator_change_shop', function( _, ePly ) 
-    if not Ambi.DarkRP.configurator_enable then ePly:Kick( '[DarkRP] Конфигуратор выключен!' ) return end
-    if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Вы не супер админ для конфигуратора!' ) return end
+--     net.Start( 'ambi_darkrp_configurator_send_changed_jobs' )
+--         net.WriteTable( tab )
+--     net.Broadcast()
+-- end )
 
-    local shop = net.ReadTable()
+-- net.AddString( 'ambi_darkrp_configurator_send_changed_jobs' )
+-- hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SendChangedJobsForNewPlayers', function( ePly ) 
+--     local tab = {}
+--     for k, v in pairs( Ambi.DarkRP.GetJobs() ) do tab[ k ] = v end
 
-    Ambi.DarkRP.shop = shop
+--     for _, data in pairs( tab ) do
+--         for k, v in pairs( data ) do
+--             if isfunction( v ) then data[ k ] = nil end
+--         end
+--     end
 
-    net.Start( 'ambi_darkrp_configurator_send_changed_shop' )
-        net.WriteTable( Ambi.DarkRP.GetShop() )
-    net.Broadcast()
-end )
+--     net.Start( 'ambi_darkrp_configurator_send_changed_jobs' )
+--         net.WriteTable( tab )
+--     net.Send( ePly )
+-- end )
 
-net.AddString( 'ambi_darkrp_configurator_send_changed_shop' )
-hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SendChangedShopForNewPlayers', function( ePly ) 
-    net.Start( 'ambi_darkrp_configurator_send_changed_shop' )
-        net.WriteTable( Ambi.DarkRP.GetShop() )
-    net.Send( ePly )
-end )
+-- -- Shop --
+-- net.AddString( 'ambi_darkrp_configurator_change_shop' )
+-- net.Receive( 'ambi_darkrp_configurator_change_shop', function( _, ePly ) 
+--     if not Ambi.DarkRP.configurator_enable then ePly:Kick( '[DarkRP] Конфигуратор выключен!' ) return end
+--     if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Вы не супер админ для конфигуратора!' ) return end
 
--- Door Categories --
-net.AddString( 'ambi_darkrp_configurator_change_door_categories' )
-net.Receive( 'ambi_darkrp_configurator_change_door_categories', function( _, ePly ) 
-    if not Ambi.DarkRP.configurator_enable then ePly:Kick( '[DarkRP] Конфигуратор выключен!' ) return end
-    if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Вы не супер админ для конфигуратора!' ) return end
+--     local shop = net.ReadTable()
 
-    local categories = net.ReadTable()
+--     Ambi.DarkRP.shop = shop
 
-    Ambi.DarkRP.doors_categories = categories
+--     local tab = table.Merge( {}, Ambi.DarkRP.GetShop() ) -- workaround: cannot to send to clients type Function() -- TODO
+--     for _, data in pairs( tab ) do
+--         for k, v in pairs( data ) do
+--             if isfunction( v ) then data[ k ] = nil end
+--         end
+--     end
 
-    net.Start( 'ambi_darkrp_configurator_send_changed_door_categories' )
-        net.WriteTable( Ambi.DarkRP.GetDoorCategories() )
-    net.Broadcast()
-end )
+--     net.Start( 'ambi_darkrp_configurator_send_changed_shop' )
+--         net.WriteTable( tab )
+--     net.Broadcast()
+-- end )
 
-net.AddString( 'ambi_darkrp_configurator_send_changed_door_categories' )
-hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SendChangedDoorCategoriesForNewPlayers', function( ePly ) 
-    net.Start( 'ambi_darkrp_configurator_send_changed_door_categories' )
-        net.WriteTable( Ambi.DarkRP.GetDoorCategories() )
-    net.Send( ePly )
-end )
+-- net.AddString( 'ambi_darkrp_configurator_send_changed_shop' )
+-- hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SendChangedShopForNewPlayers', function( ePly ) 
+--     local tab = table.Merge( {}, Ambi.DarkRP.GetShop() ) -- workaround: cannot to send to clients type Function()
+--     for _, data in pairs( tab ) do
+--         for k, v in pairs( data ) do
+--             if isfunction( v ) then data[ k ] = nil end
+--         end
+--     end
+
+--     net.Start( 'ambi_darkrp_configurator_send_changed_shop' )
+--         net.WriteTable( tab )
+--     net.Broadcast()
+-- end )
+
+-- -- Door Categories --
+-- net.AddString( 'ambi_darkrp_configurator_change_door_categories' )
+-- net.Receive( 'ambi_darkrp_configurator_change_door_categories', function( _, ePly ) 
+--     if not Ambi.DarkRP.configurator_enable then ePly:Kick( '[DarkRP] Конфигуратор выключен!' ) return end
+--     if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Вы не супер админ для конфигуратора!' ) return end
+
+--     local categories = net.ReadTable()
+
+--     Ambi.DarkRP.doors_categories = categories
+
+--     net.Start( 'ambi_darkrp_configurator_send_changed_door_categories' )
+--         net.WriteTable( Ambi.DarkRP.GetDoorCategories() )
+--     net.Broadcast()
+-- end )
+
+-- net.AddString( 'ambi_darkrp_configurator_send_changed_door_categories' )
+-- hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SendChangedDoorCategoriesForNewPlayers', function( ePly ) 
+--     net.Start( 'ambi_darkrp_configurator_send_changed_door_categories' )
+--         net.WriteTable( Ambi.DarkRP.GetDoorCategories() )
+--     net.Send( ePly )
+-- end )

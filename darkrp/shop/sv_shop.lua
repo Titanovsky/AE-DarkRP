@@ -36,27 +36,24 @@ function PLAYER:BuyShopItem( sClass, bForce )
     local class = string.lower( sClass )
 
     local item = Ambi.DarkRP.GetShopItem( class )
-    if not item then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Такого предмета в магазине не существует!' ) return end
+    if not item then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Такого предмета в магазине не существует!' ) return false end
     local price = item.GetPrice and item.GetPrice( self, item.price ) or item.price
 
     if not bForce then
-        if ( hook.Call( '[Ambi.DarkRP.CanBuyShopItem]', nil, self, sClass, bForce ) == false ) then return end
+        if ( hook.Call( '[Ambi.DarkRP.CanBuyShopItem]', nil, self, sClass, bForce ) == false ) then return false end
 
-        if not Ambi.DarkRP.Config.shop_enable then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Система Магазина - отключена!' ) return end
-        if not Ambi.DarkRP.Config.shop_buy_enable then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Возможность покупать - отключена!' ) return end
+        if not Ambi.DarkRP.Config.shop_enable then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Система Магазина - отключена!' ) return false end
+        if not Ambi.DarkRP.Config.shop_buy_enable then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Возможность покупать - отключена!' ) return false end
 
         if item.CustomCheck and ( item.CustomCheck( self ) == false ) then
-            if item.CustomCheckFailMsg then 
-                self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, item.CustomCheckFailMsg( self, item ) ) 
-            else 
-                self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Недоступно!' ) 
-            end
+            local msg = item.CustomCheckFailMsg and item.CustomCheckFailMsg( self, item ) or 'Недоступно!'
+            self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, msg ) 
 
             return false 
         end
 
         local max = item.GetMax and item.GetMax( self ) or item.max
-        if ( self:GetCountShopItem( class ) >= max ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Достигнут максимум ', C.ERROR, '('..max..')' ) return end
+        if ( self:GetCountShopItem( class ) >= max ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Достигнут максимум ', C.ERROR, '('..max..')' ) return false end
 
         if item.allowed then
             local can = false
@@ -70,8 +67,8 @@ function PLAYER:BuyShopItem( sClass, bForce )
             if ( can == false ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваша работа не имеет право покупать данный предмет!' ) return false end
         end
 
-        if ( self:GetMoney() < price ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Вам не хватает: ', C.ERROR, tostring( price - self:GetMoney() )..Ambi.DarkRP.Config.money_currency_symbol ) return end
-        if not self:GetDelay( 'AmbiDarkRPShop['..class..']' ) then self:SetDelay( 'AmbiDarkRPShop['..class..']', item.delay ) else self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Подождите: ', C.ERROR, tostring( math.floor( timer.TimeLeft( 'AmbiDarkRPShop['..class..']['..self:SteamID()..']' ) + 1 ) ), C.ABS_WHITE, ' секунд' ) return end
+        if ( self:GetMoney() < price ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Вам не хватает: ', C.ERROR, tostring( price - self:GetMoney() )..Ambi.DarkRP.Config.money_currency_symbol ) return false end
+        if not self:GetDelay( 'AmbiDarkRPShop['..class..']' ) then self:SetDelay( 'AmbiDarkRPShop['..class..']', item.delay ) else self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Подождите: ', C.ERROR, tostring( math.floor( timer.TimeLeft( 'AmbiDarkRPShop['..class..']['..self:SteamID()..']' ) + 1 ) ), C.ABS_WHITE, ' секунд' ) return false end
     end
 
     self:AddMoney( -price )
@@ -79,9 +76,11 @@ function PLAYER:BuyShopItem( sClass, bForce )
 
     local ent
     if item.weapon then
-        self:Give( item.weapon, item.ammo and true or false )
+        local class = isbool( item.weapon ) and item.ent or item.weapon -- workaround if item.weapons is bool and has item.ent
 
-        ent = self:GetWeapon( item.weapon )
+        self:Give( class, item.ammo and true or false )
+
+        ent = self:GetWeapon( class )
 
         if item.ammo then self:GiveAmmo( item.ammo, ent:GetPrimaryAmmoType(), true ) end
 
@@ -182,22 +181,23 @@ end
 
 -- ================= Hooks ============================================================================ --
 hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.AddShopTable', function( ePly ) 
-    timer.Simple( 2, function()
-        if not IsValid( ePly ) then return end
+    if not IsValid( ePly ) then return end
 
-        if not Ambi.DarkRP.players_shop_items[ ePly:SteamID() ] then 
-            Ambi.DarkRP.players_shop_items[ ePly:SteamID() ] = {} 
-        else
-            for ent, _ in pairs( Ambi.DarkRP.players_shop_items[ ePly:SteamID() ] ) do
-                ent.nw_Buyer = ePly
-                ent.nw_BuyerName = ePly:Nick()
-            end
+    if not Ambi.DarkRP.players_shop_items[ ePly:SteamID() ] then 
+        Ambi.DarkRP.players_shop_items[ ePly:SteamID() ] = {} 
+    else
+        for ent, _ in pairs( Ambi.DarkRP.players_shop_items[ ePly:SteamID() ] ) do
+            ent.nw_Buyer = ePly
+            ent.nw_BuyerName = ePly:Nick()
         end
-    end )
+    end
 end )
 
 hook.Add( 'PlayerDisconnected', 'Ambi.DarkRP.SetShopEntities', function( ePly ) 
-    for ent, _ in pairs( Ambi.DarkRP.players_shop_items[ ePly:SteamID() ] ) do
+    local items = Ambi.DarkRP.players_shop_items[ ePly:SteamID() ]
+    if not item then return end
+
+    for ent, _ in pairs( items ) do
         ent.nw_BuyerName = ePly:Nick()..' [Вышел]'
     end
 end )
@@ -207,6 +207,13 @@ hook.Add( 'EntityRemoved', 'Ambi.DarkRP.RemoveInShopTable', function( eObj )
     if not buyer_steamid then return end
 
     Ambi.DarkRP.players_shop_items[ buyer_steamid ][ eObj ] = nil
+end )
+
+hook.Add( 'PlayerSay', 'Ambi.DarkRP.BuyEntity', function( ePly, sText ) 
+    local class = Ambi.DarkRP.shop_commands[ sText ]
+    if not class then return end
+
+    ePly:BuyShopItem( class )
 end )
 
 -- ================= Nets ============================================================================= --

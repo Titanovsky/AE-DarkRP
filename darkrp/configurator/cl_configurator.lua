@@ -954,32 +954,32 @@ end
 concommand.Add( 'ambi_darkrp_configurator', Ambi.DarkRP.OpenConfigurator )
 
 -- ----------------------------------------------------------------------------------------------------------------------------------------
-net.Receive( 'ambi_darkrp_configurator_set_config_send_new_players', function() 
-    local config = net.ReadTable()
+-- net.Receive( 'ambi_darkrp_configurator_set_config_send_new_players', function() 
+--     local config = net.ReadTable()
 
-    for i, v in pairs( config ) do Ambi.DarkRP.Config[ i ] = v end
-end )
+--     for i, v in pairs( config ) do Ambi.DarkRP.Config[ i ] = v end
+-- end )
 
-net.Receive( 'ambi_darkrp_configurator_send_changed_jobs', function() 
-    local changed_jobs = net.ReadTable()
+-- net.Receive( 'ambi_darkrp_configurator_send_changed_jobs', function() 
+--     local changed_jobs = net.ReadTable()
 
-    local change = false
-    for i, v in pairs( changed_jobs ) do
-        if v then change = true break end
-    end
-    if not change then return end
+--     local change = false
+--     for i, v in pairs( changed_jobs ) do
+--         if v then change = true break end
+--     end
+--     if not change then return end
 
-    Ambi.DarkRP.jobs = changed_jobs
-end )
+--     Ambi.DarkRP.jobs = changed_jobs
+-- end )
 
-net.Receive( 'ambi_darkrp_configurator_send_changed_door_categories', function() 
-    local changed_categories = net.ReadTable()
+-- net.Receive( 'ambi_darkrp_configurator_send_changed_door_categories', function() 
+--     local changed_categories = net.ReadTable()
 
-    local change = false
-    for i, v in pairs( changed_categories ) do
-        if v then change = true break end
-    end
-    if not change then return end
+--     local change = false
+--     for i, v in pairs( changed_categories ) do
+--         if v then change = true break end
+--     end
+--     if not change then return end
 
-    Ambi.DarkRP.doors_categories = changed_categories
-end )
+--     Ambi.DarkRP.doors_categories = changed_categories
+-- end )

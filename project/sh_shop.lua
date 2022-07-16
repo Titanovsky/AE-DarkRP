@@ -4,7 +4,7 @@ if not Ambi.DarkRP then return end
 
 local C = Ambi.Packages.Out( 'colors' )
 local AddItem = Ambi.DarkRP.AddShopItem
-local SimpleAddItem = Ambi.DarkRP.SimpleAddJob
+local SimpleAddItem = Ambi.DarkRP.SimpleAddItem
 
 -- ----------------------------------------------------------------------------------------------------------------------------
 -- AddItem( 'money_printer', { 

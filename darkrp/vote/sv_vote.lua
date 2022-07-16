@@ -60,7 +60,8 @@ net.AddString( 'ambi_darkrp_start_choice' )
 
 net.Receive( 'ambi_darkrp_start_choice', function( _, ePly )
     local id = net.ReadUInt( 5 )
-    if not Ambi.DarkRP.votes[ id ] then ePly:Kick( '[DarkRP] Попытка сделать выбор в голосований, которого не существует!' ) return end
+    --if not Ambi.DarkRP.votes[ id ] then ePly:Kick( '[DarkRP] Попытка сделать выбор в голосований, которого не существует!' ) return end -- TODO: Fix
+    if not Ambi.DarkRP.votes[ id ] then return end
     if ePly.last_vote_choices and ePly.last_vote_choices[ id ] then ePly:Kick( '[DarkRP] Попытка сделать повторный выбор в голосований!' ) return end
 
     local choice = net.ReadBool()

@@ -7,13 +7,13 @@ local AddJob = Ambi.DarkRP.AddJob
 local SimpleAddJob = Ambi.DarkRP.SimpleAddJob
 
 -- ----------------------------------------------------------------------------------------------------------------------------
--- AddJob( 'TEAM_EXAMPLE', { 
---     name = 'Название Работы', 
---     command = 'job1', 
---     models = { 'models/player/Group03m/male_07.mdl' },
---     max = 0,
---     category = 'Категория', 
--- } )
+AddJob( 'TEAM_CITIZEN', { 
+    name = 'Житель', 
+    command = 'citizen', 
+    models = { 'models/player/Group03m/male_07.mdl' },
+    max = 0,
+    category = 'Категория', 
+} )
 
 -- SimpleAddJob( sClass, sName, sCommand, sCategory, sDescription, nMax, nSalary, bVote, bLicense, bDemote, cColor, tModels, tWeapons, tOther )
 -- SimpleAddJob( 'TEAM_EXAMPLE', 'Название', 'job1', 'Категория', 'Описание', 0, false, false, true, Color( 255, 0, 0 ), { 'models/player/Group03m/male_07.mdl' } )

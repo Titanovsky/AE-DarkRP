@@ -85,6 +85,15 @@ hook.Add( 'PlayerChangedTeam', 'Ambi.DarkRP.SetPlayerJob', function( ePly )
     end
 end )
 
+hook.Add( 'PlayerSay', 'Ambi.DarkRP.SetJob', function( ePly, sText ) 
+    if not Ambi.DarkRP.Config.jobs_change_on_chat_command then return end
+
+    local class = Ambi.DarkRP.jobs_commands[ sText ]
+    if not class then return end
+
+    ePly:SetJob( class )
+end )
+
 hook.Add( 'PlayerSpawn', 'Ambi.DarkRP.SetJobWeapons', function( ePly )
     timer.Simple( 0.1, function()
         if not IsValid( ePly ) or not ePly:Alive() then return end

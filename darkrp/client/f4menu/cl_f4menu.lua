@@ -131,6 +131,16 @@ function Ambi.DarkRP.OpenF4Menu()
             local i = -1
             for class, job in SortedPairsByMemberValue( Ambi.DarkRP.GetJobs(), 'category' ) do
                 if not job then continue end
+                if not Ambi.DarkRP.Config.f4menu_show_restrict_items_and_jobs then
+                    local class = job.from 
+                    if class then
+                        if isstring( class ) then
+                            if ( LocalPlayer():Job() != class ) then continue end
+                        elseif isnumber( class ) then
+                            if ( LocalPlayer():Team() != class ) then continue end
+                        end
+                    end
+                end
 
                 i = i + 1
 
@@ -233,6 +243,19 @@ function Ambi.DarkRP.OpenF4Menu()
             local i = -1
             for class, item in SortedPairsByMemberValue( Ambi.DarkRP.GetShop(), 'category' ) do
                 if not item then continue end
+                if not Ambi.DarkRP.Config.f4menu_show_restrict_items_and_jobs then
+                    if item.allowed then
+                        local can
+
+                        for _, job in ipairs( item.allowed ) do
+                            if isnumber( job ) and ( LocalPlayer():Team() == job ) then can = true break 
+                            elseif isstring( job ) and ( LocalPlayer():GetJob() == job ) then can = true break 
+                            end
+                        end
+
+                        if not can then continue end
+                    end
+                end
 
                 i = i + 1
 

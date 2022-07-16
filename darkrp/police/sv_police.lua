@@ -7,7 +7,7 @@ net.AddString( 'ambi_darkrp_police_arrest_show_time' )
 net.AddString( 'ambi_darkrp_police_arrest_remove_time' )
 
 function Ambi.DarkRP.Arrest( ePly, ePolice, sReason, nTime )
-    nTime = nTime or Ambi.DarkRP.Config.police_system_arrest_spawn_in_jail
+    nTime = nTime or Ambi.DarkRP.Config.police_system_arrest_time
     
     if not IsValid( ePly ) or not ePly:IsPlayer() then return end
     if ePly:IsArrested() then return end
@@ -78,9 +78,11 @@ end
 -- --------------------------------------------------------------------------------------------------
 function Ambi.DarkRP.Wanted( ePly, ePolice, sReason, nTime )
     nTime = nTime or Ambi.DarkRP.Config.police_system_wanted_time
+    sReason = sReason or Ambi.DarkRP.Config.police_system_wanted_reason
     
     if not IsValid( ePly ) or not ePly:IsPlayer() then return end
     if ePly:IsArrested() then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanWanted]', ePolice, ePly, sReason, nTime ) == false ) then return end
 
     ePly.nw_IsWanted = true
 
@@ -93,6 +95,12 @@ function Ambi.DarkRP.Wanted( ePly, ePolice, sReason, nTime )
         net.WriteString( sReason and 'Причина: '..sReason or '' )
     net.Broadcast()
 
+    if ( nTime > 0 ) then 
+        timer.Create( 'Wanted_Player:'..ePly:GetSteamID(), nTime, 1, function() 
+            if IsValid( ePly ) then Ambi.DarkRP.UnWanted( ePly ) end
+        end )
+    end
+
     hook.Call( '[Ambi.DarkRP.PlayerWanted]', nil, ePly, ePolice, sReason, nTime )
 
     return true
@@ -101,6 +109,7 @@ end
 function Ambi.DarkRP.UnWanted( ePly, ePolice )
     if not IsValid( ePly ) or not ePly:IsPlayer() then return end
     if not ePly.nw_IsWanted then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanUnWanted]', ePolice, ePly ) == false ) then return end
 
     ePly.nw_IsWanted = false
 
@@ -108,6 +117,8 @@ function Ambi.DarkRP.UnWanted( ePly, ePolice )
         net.WriteString( ePly:Nick()..' больше не розыскивается!' ) 
         net.WriteString( '' )
     net.Broadcast()
+
+    timer.Remove( 'Wanted_Player:'..ePly:GetSteamID() )
 
     hook.Call( '[Ambi.DarkRP.PlayerUnWanted]', nil, ePly, ePolice )
 
@@ -117,6 +128,9 @@ end
 function Ambi.DarkRP.Warrant( ePly, ePolice, sText )
     if not IsValid( ePly ) or not ePly:IsPlayer() then return end
     if ePly:HasWarrant() then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanWarrant]', ePolice, ePly, sText ) == false ) then return end
+
+    sText = sText or Ambi.DarkRP.Config.police_system_warrant_reason
 
     ePly.nw_HasWarrant = true
 
@@ -135,6 +149,8 @@ function Ambi.DarkRP.Warrant( ePly, ePolice, sText )
 end
 
 function Ambi.DarkRP.UnWarrant( ePly, ePolice )
+    if ( hook.Call( '[Ambi.DarkRP.CanUnWarrant]', ePolice, ePly ) == false ) then return end
+
     ePly.nw_HasWarrant = false
 
     timer.Remove( 'AmbiDarkRPWarrant['..ePly:SteamID()..']' )
@@ -159,6 +175,8 @@ hook.Add( 'PlayerSpawn', 'Ambi.DarkRP.ArrestedPlayer', function( ePly )
         if not position then return end
 
         position = table.Random( position )
+        if not position then return end
+        if not position.pos or not position.ang then return end
 
         ePly:SetPos( position.pos )
         ePly:SetEyeAngles( position.ang )
@@ -186,19 +204,22 @@ net.Receive( 'ambi_darkrp_police_wanted', function( _, ePly )
 
     local job = ePly:GetJobTable()
     if not ePly:IsPolice() then ePly:Kick( '[DarkRP] Попытка подать в розыск игрока, не будучи в полицейской работе!' ) return end
+    if not ePly:GetDelay( 'AmbiDarkRPWantedDelay' ) then ePly:SetDelay( 'AmbiDarkRPWantedDelay', Ambi.DarkRP.Config.police_system_wanted_delay ) else return end
 
     local ply, text = net.ReadEntity(), net.ReadString()
     if not IsValid( ply ) or not ply:IsPlayer() then return end
     if ( utf8.len( text ) > 32 ) then text = '' end
 
     if ply:IsWanted() then 
-        if ( hook.Call( '[Ambi.DarkRP.CanUnWanted]', ePly, ply, text ) == false ) then return end
-
         Ambi.DarkRP.UnWanted( ply, ePly )
-    else
-        if ( hook.Call( '[Ambi.DarkRP.CanWanted]', ePly, ply, text ) == false ) then return end
 
+        ePly:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Вы сняли с розыск игрока '..ply:Nick() )
+        ply:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Игрок ', C.AMBI_BLUE, ePly:Nick(), C.ABS_WHITE, ' снял вас с розыск!' )
+    else
         Ambi.DarkRP.Wanted( ply, ePly, text, Ambi.DarkRP.Config.police_system_wanted_time )
+
+        ePly:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Вы подали в розыск игрока '..ply:Nick() )
+        ply:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Игрок ', C.AMBI_BLUE, ePly:Nick(), C.ABS_WHITE, ' подал вас в розыск!' )
     end
 end )
 
@@ -215,14 +236,13 @@ net.Receive( 'ambi_darkrp_police_warrant', function( _, ePly )
     if not IsValid( ply ) or not ply:IsPlayer() then return end
 
     if not ply:HasWarrant() then 
-        if ( hook.Call( '[Ambi.DarkRP.CanWarrant]', ePly, ply, text ) == false ) then return end
-
         if ( utf8.len( text ) > 32 ) then text = '' end
 
         Ambi.DarkRP.Warrant( ply, ePly, text )
-    else
-        if ( hook.Call( '[Ambi.DarkRP.CanUnWarrant]', ePly, ply, text ) == false ) then return end
 
+        ply:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Игрок ', C.AMBI_BLUE, ePly:Nick(), C.ABS_WHITE, ' подал на вас Ордер на Обыск!' )
+        ePly:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Вы подали Ордер на Обыск на игрока ', C.AMBI_BLUE, ePly:Nick() )
+    else
         Ambi.DarkRP.UnWarrant( ply, ePly, text )
 
         ply:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Игрок ', C.AMBI_BLUE, ePly:Nick(), C.ABS_WHITE, ' снял у вас Ордер на Обыск!' )

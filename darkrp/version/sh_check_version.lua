@@ -1,4 +1,4 @@
-local VERSION = '1.2'
+local VERSION = '1.3'
 
 if game.SinglePlayer() then return end
 
