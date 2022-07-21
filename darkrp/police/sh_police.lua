@@ -139,12 +139,8 @@ Add( Ambi.DarkRP.Config.police_system_wanted_command, TYPE, Ambi.DarkRP.Config.p
         local text = Ambi.DarkRP.Config.police_system_wanted_reason
 
         if ply:IsWanted() then 
-            if ( hook.Call( '[Ambi.DarkRP.CanUnWanted]', ePly, ply, text ) == false ) then return end
-    
             Ambi.DarkRP.UnWanted( ply, ePly )
         else
-            if ( hook.Call( '[Ambi.DarkRP.CanWanted]', ePly, ply, text ) == false ) then return end
-    
             Ambi.DarkRP.Wanted( ply, ePly, text, Ambi.DarkRP.Config.police_system_wanted_time )
         end
     else
@@ -165,18 +161,14 @@ Add( Ambi.DarkRP.Config.police_system_wanted_command, TYPE, Ambi.DarkRP.Config.p
         local text = Ambi.DarkRP.Config.police_system_wanted_reason
 
         local ply = players[ 1 ]
-        if ply:IsWanted() then 
-            if ( hook.Call( '[Ambi.DarkRP.CanUnWanted]', ePly, ply, text ) == false ) then return end
-    
+        if ply:IsWanted() then  
             Ambi.DarkRP.UnWanted( ply, ePly )
 
-            ePly:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Вы сняли розыск с игрока '..ply:Nick() )
+            if not ply:IsWanted() then ePly:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Вы сняли розыск с игрока '..ply:Nick() ) end
         else
-            if ( hook.Call( '[Ambi.DarkRP.CanWanted]', ePly, ply, text ) == false ) then return end
-    
             Ambi.DarkRP.Wanted( ply, ePly, text, Ambi.DarkRP.Config.police_system_wanted_time )
 
-            ePly:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Вы подали в розыск игрока '..ply:Nick() )
+            if ply:IsWanted() then ePly:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Вы подали в розыск игрока '..ply:Nick() ) end
         end
     end
 end )

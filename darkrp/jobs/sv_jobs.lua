@@ -13,11 +13,30 @@ function PLAYER:SetJob( sClass, bForce, bRespawn )
         if ( hook.Call( '[Ambi.DarkRP.CanChangeJob]', nil, self, sClass, bForce ) == false ) then return end
         if timer.Exists( 'AmbiDarkRPJobDelay:'..self:SteamID() ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Подождите: ', C.ERROR, tostring( math.Round( timer.TimeLeft( 'AmbiDarkRPJobDelay:'..self:SteamID() ) ) ) , C.ABS_WHITE, ' секунд' )  return false end
         if self:GetBlockJob( sClass ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Работа ', C.ERROR, job.name, C.ABS_WHITE, ' заблокирована для Вас!' )  return false end
-        if job.admin then
-            if ( job.admin == 1 ) and not self:IsAdmin() then return false
-            elseif ( job.admin == 2 ) and not self:IsSuperAdmin() then return false
+
+        if job.check then
+            for _, tab in ipairs( job.check ) do
+                local key = tab[ 1 ] or 'none'
+                local value = tab[ 2 ] or 0
+                local reason = tab[ 3 ] or 'Вы не подходите под '..key
+
+                if isnumber( value ) then
+                    if ( self[ key ] == nil ) or ( self[ key ] < value ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, reason ) return false end
+                else
+                    if ( self[ key ] == nil ) or not ( self[ key ] == value ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, reason ) return false end
+                end
             end
         end
+
+        if job.admin then
+            if ( job.admin == 1 ) and not self:IsAdmin() then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Доступно только для админских ранов!' ) return false
+            elseif ( job.admin == 2 ) and not self:IsSuperAdmin() then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваша работа не подходит под список доступных для суперадминов работ!' ) return false
+            end
+        end
+
+        if job.block_admin and self:IsAdmin() then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Недоступно для админских рангов!' ) return false end
+        if job.block_user and self:IsUserGroup( 'user' ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Недоступно для обычного игрока!' ) return false end
+
         if job.from then
             local class = job.from
 
@@ -27,7 +46,18 @@ function PLAYER:SetJob( sClass, bForce, bRespawn )
                 if ( self:Team() != class ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Для ', C.ERROR, job.name, C.ABS_WHITE, ' Вам нужна работа ', C.ERROR, team.GetName( class ) ) return false end
             end
         end
-        if job.CustomCheck and ( job.CustomCheck( self ) == false ) then
+
+        if job.from_jobs then
+            local can = false
+
+            for _, class in ipairs( job.from_jobs ) do
+                if ( self:Job() == class ) then can = true break end
+            end
+            
+            if not can then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваша работа не подходит под список доступных для перехода работ!' ) return false end
+        end
+
+        if job.CustomCheck and ( job.CustomCheck( self, job ) == false ) then
             if job.CustomCheckFailMsg then 
                 self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, job.CustomCheckFailMsg( self, job ) ) 
             else 
@@ -36,6 +66,7 @@ function PLAYER:SetJob( sClass, bForce, bRespawn )
 
             return false 
         end
+
         if job.max and ( job.max != 0 ) then
             local max = job.max
 
@@ -50,6 +81,7 @@ function PLAYER:SetJob( sClass, bForce, bRespawn )
                 if ( count >= max ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Максимальное количество игроков с этой работы ', C.ERROR, '('..max..')', C.ABS_WHITE, ' достигнуто!' )  return false end
             end
         end
+
         if job.map and ( job.map != game.GetMap() ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Данная работа доступна на карте ', C.ERROR, job.map ) return false end
         if job.maps then
             local can = false
@@ -59,9 +91,50 @@ function PLAYER:SetJob( sClass, bForce, bRespawn )
 
             if not can then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Данная работа не доступна на этой карте!' ) return false end
         end
-        if job.whitelist then
-            if not job.whitelist[ self:SteamID() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Вы не подходите под Whitelist!' ) return false end
+
+        if job.whitelist_ranks then
+            if not job.whitelist_ranks[ self:GetUserGroup() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Вы не подходите под Whitelist Ranks!' ) return false end
         end
+
+        if job.whitelist_nicks then
+            if not job.whitelist_nicks[ self:Nick() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Вы не подходите под Whitelist Nick!' ) return false end
+        end
+
+        if job.whitelist_steamid then
+            if not job.whitelist_steamid[ self:SteamID() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Вы не подходите под Whitelist SteamID!' ) return false end
+        end
+
+        if job.whitelist_steamid64 then
+            if not job.whitelist_steamid64[ self:SteamID64() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Вы не подходите под Whitelist SteamID64!' ) return false end
+        end
+
+        if job.whitelist_models then
+            if not job.whitelist_models[ self:GetModel() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Вы не подходите под Whitelist Models!' ) return false end
+        end
+
+        if job.whitelist_colors then
+            if not job.whitelist_colors[ self:GetColor() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Вы не подходите под Whitelist Colors!' ) return false end
+        end
+
+        if job.has_weapon and not self:HasWeapon( job.has_weapon ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'У вас нет оружия: ', C.ERROR, job.has_weapon ) return false end
+        if job.has_weapons then
+            local can = false
+
+            for _, class in ipairs( job.has_weapons ) do
+                if self:HasWeapon( class ) then can = true break end
+            end
+            
+            if not can then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'У Вас нет необходимого оружия для вступления на работу!' )  return false end
+        end
+        
+        if job.money then
+            local money = self:GetMoney()
+            if ( money < job.money ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'У Вас не хватает денег ', C.ERROR, job.money..Ambi.DarkRP.Config.money_currency_symbol ) return false end
+
+            self:AddMoney( -job.money )
+            self:ChatSend( C.AMBI_GREEN, '•  ', C.ABS_WHITE, 'Вы потратили ', C.AMBI_GREEN, job.money..Ambi.DarkRP.Config.money_currency_symbol )
+        end
+
         if job.vote and Ambi.DarkRP.Config.vote_enable and ( #player.GetAll() > 1 ) or job.RequiresVote and ( job.RequiresVote( self, job ) != false ) then -- job.vote Всегда должна быть в последней проверки из-за специфики Ply:SetJob( class, true )
             if job.CanStartVote and ( job.CanStartVote( self ) == false ) then return false end
             if not Ambi.DarkRP.CanStartVote() then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Максимум голосований достигнут, попробуйте позже!' ) return false end
@@ -80,7 +153,9 @@ function PLAYER:SetJob( sClass, bForce, bRespawn )
 
     self:SetTeam( job.index )
     self:ChatSend( C.AMBI, '•  ', C.ABS_WHITE, 'Ваша профессия: ', job.color, job.name )
-    timer.Create( 'AmbiDarkRPJobDelay:'..self:SteamID(), Ambi.DarkRP.Config.jobs_delay, 1, function() end )
+
+    local delay = Ambi.DarkRP.Config.jobs_delay
+    timer.Create( 'AmbiDarkRPJobDelay:'..self:SteamID(), delay, 1, function() end )
 
     if Ambi.DarkRP.Config.jobs_respawn and ( bRespawn != false ) then 
         self:StripWeapons()
@@ -130,7 +205,11 @@ function PLAYER:BlockJob( sClass, nTime )
 
     if nTime and ( nTime > 0 ) then
         timer.Simple( nTime, function()
-            if IsValid( self ) then self:UnBlockJob( sClass ) end
+            if IsValid( self ) then 
+                self:UnBlockJob( sClass ) 
+            else
+                Ambi.DarkRP.players_block_jobs[ sid ][ sClass ] = nil
+            end
         end )
     end
 end
@@ -164,9 +243,13 @@ function PLAYER:SetJobFeatures()
     if not job then return end
 
     if Ambi.DarkRP.Config.jobs_set_color then 
-        local color = job.color
-        local color_model =  Vector( color.r / 255, color.g / 255, color.b / 255 )
-        self:SetPlayerColor( color_model ) 
+        if job.color_model then
+            self:SetColor( job.color_model )
+        else
+            local color = job.color
+            local vector_from_color = Vector( color.r / 255, color.g / 255, color.b / 255 )
+            self:SetPlayerColor( vector_from_color ) 
+        end
     end
 
     if self.job_model then
@@ -177,23 +260,45 @@ function PLAYER:SetJobFeatures()
         self:SetModel( job.models[ 1 ] )
     end
 
+    if job.material then self:SetMaterial( job.material ) end
+
     if job.model_scale then
         self:SetModelScale( job.model_scale )
     end
+
+    if job.bodygroups then
+        for id, value in pairs( job.bodygroups ) do
+            self:SetBodygroup( id, value )
+        end
+    end
+
+    if job.skin then self:SetSkin( job.skin ) end
 
     if job.health or job.hp then self:SetHealth( job.health or job.hp ) end
     if job.max_health or job.max_hp then self:SetMaxHealth( job.max_health or job.max_hp ) end
     if job.armor then self:SetArmor( job.armor ) end
     if job.max_armor then self:SetMaxArmor( job.max_armor ) end
+
     if job.walkspeed then self:SetWalkSpeed( job.walkspeed ) end
     if job.runspeed then self:SetRunSpeed( job.runspeed ) end
-    if job.jumpower then self:SetJumpPower( job.jumpower ) end
+    if job.maxspeed then self:SetMaxSpeed( job.maxspeed ) end
+    if job.duckspeed then self:SetDuckSpeed( job.duckspeed ) end
+    if job.unduckspeed then self:SetUnDuckSpeed( job.unduckspeed ) end
+    if job.crouchedspeed then self:SetCrouchedWalkSpeed( job.crouchedspeed ) end
+    if job.ladderclimbspeed then self:SetLadderClimbSpeed( job.ladderclimbspeed ) end
+    if job.slowwalkspeed then self:SetSlowWalkSpeed( job.slowwalkspeed ) end
+    if job.jumppower then self:SetJumpPower( job.jumppower ) end
+
     if job.license then self:GiveRealLicenseGun() end
+    if job.fake_license then self:GiveFakeLicenseGun() end
     if job.god then self:GodEnable() end
 
     if job.ammo then
         for ammo, count in pairs( job.ammo ) do self:GiveAmmo( count, ammo, true ) end
     end
+
+    if job.delay then timer.Create( 'AmbiDarkRPJobDelay:'..self:SteamID(), job.delay, 1, function() end ) end
+    if job.block then self:BlockJob( self:GetJob(), job.block ) end
 
     self:GiveWeaponsJob()
 end
@@ -218,6 +323,8 @@ function PLAYER:GiveWeaponsJob()
             self:GetWeapon( class ).cannot_drop = true
         end
     end
+
+    hook.Call( '[Ambi.DarkRP.PlayerLoadout]', nil, self, weps )
 end
 
 function PLAYER:DemoteJob( bForce, ePly )

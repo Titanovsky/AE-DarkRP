@@ -384,13 +384,13 @@ hook.Add( '[Ambi.DarkRP.CanBuyShopItem]', 'Ambi.DarkRP.Compatibility', function(
     end
 end )
 
-hook.Add( '[Ambi.DarkRP.CanArrest]', 'Ambi.DarkRP.Compatibility', function( ePly, ePolice, sReason, nTime )
+hook.Add( '[Ambi.DarkRP.CanArrest]', 'Ambi.DarkRP.Compatibility', function( ePolice, ePly, sReason, nTime )
     local can, msg = hook.Call( 'canArrest', nil, ePolice, ePly )
 
     if ( can == false ) then ePolice:ChatPrint( msg or '' ) return false end
 end )
 
-hook.Add( '[Ambi.DarkRP.CanUnArrest]', 'Ambi.DarkRP.Compatibility', function( ePly, ePolice )
+hook.Add( '[Ambi.DarkRP.CanUnArrest]', 'Ambi.DarkRP.Compatibility', function( ePolice, ePly )
     if not IsValid( ePolice ) then return end
 
     local can, msg = hook.Call( 'canUnarrest', nil, ePolice, ePly )

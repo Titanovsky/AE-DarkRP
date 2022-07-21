@@ -22,6 +22,7 @@ hook.Add( 'PlayerSpawn', 'Ambi.DarkRP.SetJobStats', function( ePly )
         if not IsValid( ePly ) then return end
 
         ePly:SetJobFeatures()
+        ePly:SetupHands()
 
         if ePly:IsArrested() then return end
 
@@ -60,20 +61,6 @@ hook.Add( 'PlayerSpawn', 'Ambi.DarkRP.SetJobStats', function( ePly )
     end )
 end )
 
-hook.Add( 'EntityTakeDamage', 'Ambi.DarkRP.JobDamage', function( eObj, dmgInfo )
-    local attacker = dmgInfo:GetAttacker()
-    if not IsValid( attacker) or not attacker:IsPlayer() then return end
-
-    local damage = attacker:GetJobTable().damage
-    if damage then dmgInfo:SetDamage( damage ) return end
-
-    local add_damage = attacker:GetJobTable().add_damage
-    if add_damage then dmgInfo:SetDamage( dmgInfo:GetDamage() + add_damage ) return end
-
-    local multiply_damage = attacker:GetJobTable().multiply_damage
-    if multiply_damage then dmgInfo:SetDamage( dmgInfo:GetDamage() * multiply_damage ) return end
-end )
-
 hook.Add( 'PlayerChangedTeam', 'Ambi.DarkRP.SetPlayerJob', function( ePly )
     ePly.job_model = nil
 
@@ -91,6 +78,10 @@ hook.Add( 'PlayerSay', 'Ambi.DarkRP.SetJob', function( ePly, sText )
     local class = Ambi.DarkRP.jobs_commands[ sText ]
     if not class then return end
 
+    local job = Ambi.DarkRP.GetJob( class )
+    if not job then return end
+    if ( job.can_join_command == false ) then ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Нельзя вступить в эту работу через команду!' ) return end
+
     ePly:SetJob( class )
 end )
 
@@ -107,6 +98,34 @@ hook.Add( 'PlayerSpawn', 'Ambi.DarkRP.SetJobWeapons', function( ePly )
     end )
 end )
 
+-- ================= Properties ======================================================================= --
+hook.Add( 'EntityTakeDamage', 'Ambi.DarkRP.JobDamage', function( eObj, dmgInfo )
+    local attacker = dmgInfo:GetAttacker()
+    if not IsValid( attacker ) or not attacker:IsPlayer() then return end
+
+    local damage = attacker:GetJobTable().damage
+    if damage then dmgInfo:SetDamage( damage ) end
+
+    local add_damage = attacker:GetJobTable().add_damage
+    if add_damage then dmgInfo:SetDamage( dmgInfo:GetDamage() + add_damage ) end
+
+    local multiply_damage = attacker:GetJobTable().multiply_damage
+    if multiply_damage then dmgInfo:SetDamage( dmgInfo:GetDamage() * multiply_damage ) end
+
+    if not eObj:IsPlayer() then return end
+    
+    local job = eObj:GetJobTable()
+
+    local damage = job.take_damage
+    if damage then dmgInfo:SetDamage( damage ) end
+
+    local add_damage = job.take_add_damage
+    if add_damage then dmgInfo:SetDamage( dmgInfo:GetDamage() + add_damage ) end
+
+    local multiply_damage = job.take_multiply_damage
+    if multiply_damage then dmgInfo:SetDamage( dmgInfo:GetDamage() * multiply_damage ) end
+end )
+
 hook.Add( 'PlayerDeath', 'Ambi.DarkRP.DemoteJobAfterDeath', function( ePly ) 
     local job = ePly:GetJobTable()
 
@@ -117,7 +136,7 @@ hook.Add( '[Ambi.DarkRP.CanBuyDoor]', 'Ambi.DarkRP.RestrictCanBuyDoorForJobs', f
     local job = ePly:GetJobTable()
     if not job then return end
 
-    if ( job.doors_buy == false ) then ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваша работа не имеет право покупать двери!' ) return false end
+    if ( job.can_buy_door == false ) then ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваша работа не имеет право покупать двери!' ) return false end
 
     local count = 0
     for door, _ in pairs( ePly.doors ) do
@@ -127,10 +146,62 @@ hook.Add( '[Ambi.DarkRP.CanBuyDoor]', 'Ambi.DarkRP.RestrictCanBuyDoorForJobs', f
     if job.doors_max and ( count >= job.doors_max ) then ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Вы достигли максимум дверей для работы!' ) return false end
 end )
 
+hook.Add( '[Ambi.DarkRP.CanArrest]', 'Ambi.DarkRP.PropertyForJobs', function( ePolice, ePly ) 
+    local job = ePly:GetJobTable()
+    if not job then return end
+
+    if ( job.can_arrest == false ) then 
+        if IsValid( ePolice ) then ePolice:ChatSend( C.ERROR, '• ', C.ABS_WHITE, 'Вы не сможете арестовать игрока из-за его работы!' ) end
+
+        return false 
+    end
+end )
+
+hook.Add( '[Ambi.DarkRP.CanWanted]', 'Ambi.DarkRP.PropertyForJobs', function( ePolice, ePly ) 
+    local job = ePly:GetJobTable()
+    if not job then return end
+
+    if ( job.can_wanted == false ) then 
+        if IsValid( ePolice ) then ePolice:ChatSend( C.ERROR, '• ', C.ABS_WHITE, 'Вы не сможете подать в розыск игрока из-за его работы!' ) end
+        
+        return false 
+    end
+end )
+
+hook.Add( '[Ambi.DarkRP.CanWarrant]', 'Ambi.DarkRP.PropertyForJobs', function( ePolice, ePly ) 
+    local job = ePly:GetJobTable()
+    if not job then return end
+
+    if ( job.can_warrant == false ) then 
+        if IsValid( ePolice ) then ePolice:ChatSend( C.ERROR, '• ', C.ABS_WHITE, 'Вы не сможете взять ордер на обыск игрока из-за его работы!' ) end
+        
+        return false 
+    end
+end )
+
+hook.Add( 'PlayerCanPickupWeapon', 'Ambi.DarkRP.PropertyForJobs', function( ePly )
+    local job = ePly:GetJobTable()
+    if not job then return end
+
+    if ( job.can_pickup_weapons == false ) then return false end
+end )
+
+hook.Add( '[Ambi.DarkRP.CanBuyShopItem]', 'Ambi.DarkRP.PropertyForJobs', function( ePly ) 
+    local job = ePly:GetJobTable()
+    if not job then return end
+
+    if ( job.can_buy_shop_item == false ) then ePly:ChatSend( C.ERROR, '• ', C.ABS_WHITE, 'Ваша работа не позволяет покупать предметы!' ) return false end
+end )
+
+hook.Add( '[Ambi.DarkRP.CanSellShopItem]', 'Ambi.DarkRP.PropertyForJobs', function( ePly ) 
+    local job = ePly:GetJobTable()
+    if not job then return end
+
+    if ( job.can_sell_shop_item == false ) then ePly:ChatSend( C.ERROR, '• ', C.ABS_WHITE, 'Ваша работа не позволяет продавать предметы!' ) return false end
+end )
+
 -- ================= Hooks Custom Fiels ==================================================================== --
-
 -- Old (DarkRP)
-
 hook.Add( 'PlayerSpawn', 'Ambi.DarkRP.JobCustomField', function( ePly )
     timer.Simple( 0, function()
         if not IsValid( ePly ) then return end
@@ -205,17 +276,26 @@ hook.Add( 'PlayerSetModel', 'Ambi.DarkRP.JobCustomField', function( ePly )
     end
 end )
 
-hook.Add( 'PlayerSpawnProp', 'Ambi.DarkRP.JobCustomField', function( ePly, sObj )
+hook.Add( 'ShowHelp', 'Ambi.DarkRP.JobCustomField', function( ePly ) -- F1
     local job = Ambi.DarkRP.GetJob( ePly:GetJob() )
     if not job then return end
 
-    local Action = job.PlayerSpawnProp
+    local Action = job.ShowHelp
     if Action then
-        return Action( ePly, sObj )
+        Action( ePly )
     end
 end )
 
-hook.Add( 'ShowSpare1', 'Ambi.DarkRP.JobCustomField', function( ePly )
+hook.Add( 'ShowTeam', 'Ambi.DarkRP.JobCustomField', function( ePly ) -- F2
+    if not job then return end
+
+    local Action = job.ShowTeam
+    if Action then
+        Action( ePly )
+    end
+end )
+
+hook.Add( 'ShowSpare1', 'Ambi.DarkRP.JobCustomField', function( ePly ) -- F3
     local job = Ambi.DarkRP.GetJob( ePly:GetJob() )
     if not job then return end
 
@@ -225,7 +305,7 @@ hook.Add( 'ShowSpare1', 'Ambi.DarkRP.JobCustomField', function( ePly )
     end
 end )
 
-hook.Add( 'ShowSpare2', 'Ambi.DarkRP.JobCustomField', function( ePly )
+hook.Add( 'ShowSpare2', 'Ambi.DarkRP.JobCustomField', function( ePly ) -- F4
     local job = Ambi.DarkRP.GetJob( ePly:GetJob() )
     if not job then return end
 
@@ -245,7 +325,7 @@ hook.Add( 'PlayerChangedTeam', 'Ambi.DarkRP.JobCustomField', function( ePly, nOl
     end
 end )
 
--- New (DarkRP Alter) 
+-- New
 
 local hook_name = 'PlayerSwitchFlashlight'
 hook.Add( hook_name, 'Ambi.DarkRP.JobCustomField', function( ePly, bEnabled )
@@ -356,6 +436,16 @@ hook.Add( hook_name, 'Ambi.DarkRP.JobCustomField', function( ePly, sWeapon, tSWE
     local Action = job[ hook_name ]
     if Action then
         return Action( ePly, sWeapon, tSWEP )
+    end
+end )
+
+hook.Add( 'PlayerSpawnProp', 'Ambi.DarkRP.JobCustomField', function( ePly, sObj )
+    local job = Ambi.DarkRP.GetJob( ePly:GetJob() )
+    if not job then return end
+
+    local Action = job.PlayerSpawnProp
+    if Action then
+        return Action( ePly, sObj )
     end
 end )
 

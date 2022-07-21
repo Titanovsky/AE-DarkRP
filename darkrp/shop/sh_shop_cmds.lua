@@ -8,6 +8,8 @@ local TYPE = 'DarkRP | Shop'
 
 Add( Ambi.DarkRP.Config.shop_buy_command, TYPE, Ambi.DarkRP.Config.shop_buy_description, 1, function( ePly, tArgs ) 
     ePly:BuyShopItem( tArgs[ 2 ] )
+
+    return true
 end )
 
 Add( Ambi.DarkRP.Config.shop_sell_command, TYPE, Ambi.DarkRP.Config.shop_sell_description, 1, function( ePly, tArgs ) 
@@ -16,4 +18,6 @@ Add( Ambi.DarkRP.Config.shop_sell_command, TYPE, Ambi.DarkRP.Config.shop_sell_de
     if ( ePly:Distance( ent ) > Ambi.DarkRP.Config.shop_sell_distance ) then return end
 
     ePly:SellShopItem( ent )
+
+    return true
 end )

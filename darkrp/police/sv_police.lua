@@ -11,7 +11,7 @@ function Ambi.DarkRP.Arrest( ePly, ePolice, sReason, nTime )
     
     if not IsValid( ePly ) or not ePly:IsPlayer() then return end
     if ePly:IsArrested() then return end
-    if ( hook.Call( '[Ambi.DarkRP.CanArrest]', nil, ePly, ePolice, sReason, nTime ) == false ) then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanArrest]', nil, ePolice, ePly, sReason, nTime ) == false ) then return end
  
     ePly.nw_IsArrested = true
 
@@ -56,7 +56,7 @@ function Ambi.DarkRP.UnArrest( ePly, ePolice )
     if not IsValid( ePly ) or not ePly:IsPlayer() then return end
     if not ePly.nw_IsArrested then return end
 
-    if ( hook.Call( '[Ambi.DarkRP.CanUnArrest]', nil, ePly, ePolice ) == false ) then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanUnArrest]', nil, ePolice, ePly ) == false ) then return end
 
     timer.Remove( 'AmbiDarkRPArrest['..ePly:SteamID()..']' )
 
@@ -82,7 +82,7 @@ function Ambi.DarkRP.Wanted( ePly, ePolice, sReason, nTime )
     
     if not IsValid( ePly ) or not ePly:IsPlayer() then return end
     if ePly:IsArrested() then return end
-    if ( hook.Call( '[Ambi.DarkRP.CanWanted]', ePolice, ePly, sReason, nTime ) == false ) then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanWanted]', nil, ePolice, ePly, sReason, nTime ) == false ) then return end
 
     ePly.nw_IsWanted = true
 
@@ -109,7 +109,7 @@ end
 function Ambi.DarkRP.UnWanted( ePly, ePolice )
     if not IsValid( ePly ) or not ePly:IsPlayer() then return end
     if not ePly.nw_IsWanted then return end
-    if ( hook.Call( '[Ambi.DarkRP.CanUnWanted]', ePolice, ePly ) == false ) then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanUnWanted]', nil, ePolice, ePly ) == false ) then return end
 
     ePly.nw_IsWanted = false
 
@@ -128,7 +128,7 @@ end
 function Ambi.DarkRP.Warrant( ePly, ePolice, sText )
     if not IsValid( ePly ) or not ePly:IsPlayer() then return end
     if ePly:HasWarrant() then return end
-    if ( hook.Call( '[Ambi.DarkRP.CanWarrant]', ePolice, ePly, sText ) == false ) then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanWarrant]', nil, ePolice, ePly, sText ) == false ) then return end
 
     sText = sText or Ambi.DarkRP.Config.police_system_warrant_reason
 
@@ -149,7 +149,7 @@ function Ambi.DarkRP.Warrant( ePly, ePolice, sText )
 end
 
 function Ambi.DarkRP.UnWarrant( ePly, ePolice )
-    if ( hook.Call( '[Ambi.DarkRP.CanUnWarrant]', ePolice, ePly ) == false ) then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanUnWarrant]', nil, ePolice, ePly ) == false ) then return end
 
     ePly.nw_HasWarrant = false
 

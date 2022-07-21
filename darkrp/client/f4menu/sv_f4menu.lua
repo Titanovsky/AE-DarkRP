@@ -14,7 +14,8 @@ net.Receive( 'ambi_darkrp_f4menu_set_job', function( _, ePly )
     if not model then return end
 
     ePly.job_model = model
-    ePly:SetJob( class )
+    
+    ePly:Say( '/'..job.command )
 end )
 
 -- TODO: net команды
