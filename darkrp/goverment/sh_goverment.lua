@@ -31,3 +31,7 @@ Ambi.DarkRP.laws = Ambi.DarkRP.Config.goverment_laws_default
 function Ambi.DarkRP.Laws()
     return Ambi.DarkRP.laws
 end
+
+function Ambi.DarkRP.GetLaws()
+    return Ambi.DarkRP.Laws()
+end

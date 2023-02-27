@@ -1,4 +1,6 @@
-local Ents, NW, C = Ambi.RegEntity, Ambi.NW, Ambi.General.Global.Colors
+local RegEnt, C = Ambi.RegEntity, Ambi.General.Global.Colors
+
+-- ---------------------------------------------------------------------------------------------------------------------------------------
 local ENT = {}
 
 ENT.Class       = 'spawned_shipment'
@@ -8,6 +10,7 @@ ENT.PrintName	= 'Коробка'
 ENT.Author		= 'Ambi'
 ENT.Category	= 'DarkRP'
 ENT.Spawnable   =  true
+ENT.IsSpawnedShipment = true
 
 ENT.Stats = {
     type = 'Entity',
@@ -15,7 +18,14 @@ ENT.Stats = {
     date = '23.04.2022 23:51'
 }
 
-Ents.Register( ENT.Class, 'ents', ENT )
+function ENT:SetupDataTables()
+    self:NetworkVar("Int",0,"contents")
+    self:NetworkVar("Int",1,"count")
+    self:NetworkVar("Float", 0, "gunspawn")
+    self:NetworkVar("Entity", 1, "gunModel")
+end
+
+RegEnt.Register( ENT.Class, 'ents', ENT )
 
 if CLIENT then
     local C, GUI, Draw = Ambi.Packages.Out( '@d' )
@@ -37,15 +47,21 @@ if CLIENT then
         end
     end
 
-    return Ents.Register( ENT.Class, 'ents', ENT )
+    return RegEnt.Register( ENT.Class, 'ents', ENT )
 end 
 
 function ENT:Initialize()
-    Ents.Initialize( self, 'models/Items/item_item_crate.mdl' )
-    Ents.Physics( self, MOVETYPE_VPHYSICS, SOLID_VPHYSICS, nil, true, true )
+    RegEnt.Initialize( self, 'models/Items/item_item_crate.mdl' )
+    RegEnt.Physics( self, MOVETYPE_VPHYSICS, SOLID_VPHYSICS, nil, true, true )
 
     self:SetHealth( Ambi.DarkRP.Config.shipment_health )
     self:SetMaxHealth( Ambi.DarkRP.Config.shipment_health )
+
+    self.contents = self:EntIndex()
+end
+
+function ENT:OnRemove()
+    CustomShipments[ self:Getcontents() ] = nil
 end
 
 function ENT:OnTakeDamage( damageInfo )
@@ -84,6 +100,7 @@ function ENT:Use( ePly )
   
     local info = self:GetInfo()
     if not info then ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'В коробке ничего нет' ) return end
+    if ( hook.Call( '[Ambi.DarkRP.PlayerCanOpenShipment]', nil, ePly, self, info ) == false ) then return end
 
     local ent
     if info.is_weapon then
@@ -94,17 +111,95 @@ function ENT:Use( ePly )
     end
 
     ent:SetPos( self:GetPos() + Vector( 0, 0, 50 ) )
-    --ent:SetAngles( weaponAng )
     ent:Spawn()
     ent:Activate()
 
     self.nw_Count = self.nw_Count - 1
+
+    hook.Call( '[Ambi.DarkRP.PlayerOpenedShipment]', nil, ePly, self, info, ent )
     
     if ( self.nw_Count <= 0 ) then 
+        hook.Call( '[Ambi.DarkRP.ShipmentRemoved]', nil, ePly, self, info, ent )
+
         self:Remove() 
     else
         timer.Create( 'AmbiDarkRPShipmentDelay['..self:EntIndex()..']', Ambi.DarkRP.Config.shipment_delay, 1, function() end )
     end
 end
 
-Ents.Register( ENT.Class, 'ents', ENT )
+-- for Compatibility ---------------------------------------------------------------------------------------
+function ENT:StartSpawning()
+    self.locked = true
+
+    timer.Simple(0, function() self.locked = true end) -- when spawning through pocket it might be unlocked
+    timer.Simple(GAMEMODE.Config.shipmentspawntime, function() if IsValid(self) then self.locked = false end end)
+end
+
+function ENT:SetContents(s, c)
+    self:Setcontents(s)
+    self:Setcount(c)
+end
+
+local function calculateAmmo(class, shipment)
+    local clip1, ammoadd = shipment.clip1, shipment.ammoadd
+
+    local defaultClip, clipSize = 0, 0
+    local wep_tbl = weapons.Get(class)
+    if wep_tbl and istable(wep_tbl.Primary) then
+        defaultClip = wep_tbl.Primary.DefaultClip or -1
+        clipSize = wep_tbl.Primary.ClipSize or -1
+    end
+    ammoadd = ammoadd or defaultClip
+
+    if not clip1 then
+        clip1 = clipSize
+    end
+    return ammoadd, clip1
+end
+
+function ENT:SpawnItem()
+    timer.Remove(self:EntIndex() .. "crate")
+    self.sparking = false
+    local count = self:Getcount()
+    if count <= 1 then self:Remove() end
+    local contents = self:Getcontents()
+
+    local weapon = ents.Create("spawned_weapon")
+
+    local weaponAng = self:GetAngles()
+    local weaponPos = self:GetAngles():Up() * 40 + weaponAng:Up() * (math.sin(CurTime() * 3) * 8)
+    weaponAng:RotateAroundAxis(weaponAng:Up(), (CurTime() * 180) % 360)
+
+    if not CustomShipments[contents] then
+        weapon:Remove()
+        self:Remove()
+        return
+    end
+
+    weapon:SetWeaponClass( self.nw_ent )
+    weapon:SetModel( self.nw_Model )
+
+    weapon.ammoadd, weapon.clip1 = calculateAmmo(class, self)
+    weapon.clip2 = self.clip2
+    weapon:SetPos(self:GetPos() + weaponPos)
+    weapon:SetAngles(weaponAng)
+    weapon.nodupe = true
+
+    weapon:SetInfo( self.nw_ent, self.nw_Model, self.nw_Count )
+    weapon:Spawn()
+    
+    count = count - 1
+    
+    self:Setcount(count)
+    self.locked = false
+    self.USED = nil
+end
+
+function ENT:Destruct()
+    if self.Destructed then return end
+    self.Destructed = true
+
+    self:Remove()
+end
+
+RegEnt.Register( ENT.Class, 'ents', ENT )

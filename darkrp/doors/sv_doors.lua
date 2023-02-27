@@ -1,7 +1,7 @@
 local SQL, C= Ambi.SQL, Ambi.General.Global.Colors
-local DB = SQL.CreateTable( 'darkrp_alt_doors', 'Door, Map, IsBlock, Category' )
+local DB = SQL.CreateTable( 'darkrp2_doors', 'Door, Map, IsBlock, Category' )
 
---------------------------------------------------------------------------------------------------------------------------------------
+-- ------------------------------------------------------------------------------------------------------------------------------------
 function Ambi.DarkRP.SetDoorFree( eDoor ) -- Сделать двери возможность покупать, освободить её ото всех
     if not IsValid( eDoor ) or not Ambi.DarkRP.Config.doors_classes[ eDoor:GetClass() ] then return end
     if SQL.Select( DB, 'Map', 'Door', eDoor:EntIndex() ) then SQL.Delete( DB, 'Door', eDoor:EntIndex() ) end
@@ -44,6 +44,7 @@ function Ambi.DarkRP.SetDoorOwners( eDoor, tPlayers )
     if not eDoor.first_owner then
         eDoor.first_owner = tPlayers[ 1 ]
 
+        eDoor.nw_Owner = eDoor.first_owner
         eDoor.nw_Title = eDoor.first_owner:Nick()
     end
 end
@@ -116,6 +117,7 @@ function Ambi.DarkRP.RemoveDoorOwners( eDoor )
     end 
 
     eDoor.first_owner = nil
+    eDoor.nw_Owner = nil
     eDoor.owners = {}
     eDoor.nw_IsOwned = false
     eDoor.nw_Title = 'Дверь №'..eDoor:EntIndex()
@@ -146,7 +148,9 @@ local PLAYER = FindMetaTable( 'Player' )
 
 function PLAYER:SellDoors()
     local count = 0
-    for door, _ in pairs( self.doors ) do
+    local doors = self.doors
+
+    for door, _ in pairs( doors ) do
         count = count + 1
 
         if ( door.first_owner == self ) then self:AddMoney( Ambi.DarkRP.Config.doors_cost_sell ) end
@@ -156,6 +160,8 @@ function PLAYER:SellDoors()
 
     if ( count > 0 ) then 
         self:ChatSend( C.AMBI, '•  ', C.ABS_WHITE, 'Вы продали ', C.AMBI, tostring( count ), C.ABS_WHITE, ' дверей и получили ', C.AMBI_GREEN, tostring( Ambi.DarkRP.Config.doors_cost_sell * count )..Ambi.DarkRP.Config.money_currency_symbol ) 
+
+        hook.Call( '[Ambi.DarkRP.SoldAllDoors]', nil, self, doors )
     end
 end
 
@@ -347,15 +353,15 @@ end )
 
 net.AddString( 'ambi_darkrp_get_info_door' )
 net.Receive( 'ambi_darkrp_get_info_door', function( _, ePly ) 
-    if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Попытка, обычного игрока, узнать инфу о двери' ) return end
+    if not ePly:IsSuperAdmin() then ePly:Kick( '[DarkRP] Попытка обычного игрока, узнать инфу о двери' ) return end
 
     local door = net.ReadEntity()
 
-    ePly:ChatSend( C.AMBI_RED, '\n==================' )
-    ePly:ChatSend( C.ABS_WHITE, 'Дверь: ', C.AMBI_RED, tostring( door ) )
-    ePly:ChatSend( C.ABS_WHITE, 'Владельцы: ' )
+    ePly:ChatSend( '~RED~ \n==================' )
+    ePly:ChatSend( '~WHITE~ Дверь: ~RED~'..tostring( door ) )
+    ePly:ChatSend( '~WHITE~ Владельцы: '  )
     for i, ply in ipairs( door.owners ) do
-        ePly:ChatSend( C.AMBI_RED, i..'. ', C.ABS_WHITE, ply:Nick() )
+        ePly:ChatSend( '~RED~ '..i..'. ~WHITE~ '..ply:Nick() )
     end
-    ePly:ChatSend( C.AMBI_RED, '==================\n' )
+    ePly:ChatSend( '~RED~ ==================\n' )
 end )

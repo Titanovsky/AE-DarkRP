@@ -21,6 +21,8 @@ SWEP.ViewModel      = 'models/weapons/c_stunstick.mdl'
 SWEP.WorldModel     = 'models/weapons/w_stunbaton.mdl'
 SWEP.darkrp_colorized = { color = C.AMBI_GREEN, material = 'models/debug/debugwhite' }
 
+SWEP.StickColor = C.AMBI_GREEN -- for compatibility
+
 SWEP.Primary = {}
 SWEP.Primary.ClipSize    = -1
 SWEP.Primary.DefaultClip = -1
@@ -79,7 +81,6 @@ function SWEP:PrimaryAttack()
 
         if not Ambi.DarkRP.Config.police_system_enable then owner:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Полицейская Система - отключена!' ) return end
         if not Ambi.DarkRP.Config.police_system_arrest_enable then owner:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Отключена возможность освободить игрока!' ) return end
-
         if Ambi.DarkRP.Config.police_system_arrest_can_only_police and not owner:GetJobTable().police then owner:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваша работа не имеет право освобождать!' ) return end
 
         if not ply:IsArrested() then return end
@@ -88,8 +89,10 @@ function SWEP:PrimaryAttack()
 
         Ambi.DarkRP.UnArrest( ply, owner )
 
-        owner:ChatSend( C.AMBI_GREEN, '•  ', C.ABS_WHITE, 'Вы освободили ', C.AMBI_GREEN, ply:Nick() )
-        ply:ChatSend( C.AMBI_GREEN, '•  ', C.ABS_WHITE, 'Вас освободил ', C.AMBI_GREEN, owner:Nick() )
+        if not ply:IsArrested() then
+            owner:ChatSend( C.AMBI_GREEN, '•  ', C.ABS_WHITE, 'Вы освободили ', C.AMBI_GREEN, ply:Nick() )
+            ply:ChatSend( C.AMBI_GREEN, '•  ', C.ABS_WHITE, 'Вас освободил ', C.AMBI_GREEN, owner:Nick() )
+        end
     end
 end
 

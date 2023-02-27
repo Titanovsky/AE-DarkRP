@@ -7,7 +7,14 @@ local Add = Ambi.ChatCommands.AddCommand
 local TYPE = 'DarkRP | Shop'
 
 Add( Ambi.DarkRP.Config.shop_buy_command, TYPE, Ambi.DarkRP.Config.shop_buy_description, 1, function( ePly, tArgs ) 
-    ePly:BuyShopItem( tArgs[ 2 ] )
+    local class = ''
+    for i = 2, #tArgs do
+        local word = tArgs[ i ]
+        local breakpoint = ( i == #tArgs ) and '' or ' '
+        class = class..word..breakpoint
+    end
+
+    ePly:BuyShopItem( class )
 
     return true
 end )

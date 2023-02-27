@@ -1,4 +1,6 @@
 local Ents, NW, C = Ambi.RegEntity, Ambi.NW, Ambi.General.Global.Colors
+
+-- ---------------------------------------------------------------------------------------------------------------------------------------------------
 local ENT = {}
 
 ENT.Class       = 'money_printer'

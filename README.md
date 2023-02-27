@@ -11,6 +11,11 @@ DarkRP — игровой режим для игры Garry's Mod и модуль
   1. Скачайте архив с этого репозитория (Синяя кнопка Code --> Download ZIP)
   2. Скачайте и установите [Ambi Eco](https://github.com/Titanovsky/ambi-eco#how-to-setup)
   3. Распакуйте папки darkrp и project в папку addons/ambi/lua/modules (Не пугайтесь, что project потребует замены файлов, подтверждайте)
+  4. Зайдите в **ambi_config.lua** и впишите в конце:
+  ```lua
+  Ambi.ConnectModule( 'darkrp', 'Режим DarkRP' )
+  Ambi.ConnectModule( 'project' )
+  ```
 
 • Более подробный гайд на [Официальной Вики](https://titanovskyteam.gitbook.io/darkrp/information/setup)
 
@@ -18,8 +23,7 @@ DarkRP — игровой режим для игры Garry's Mod и модуль
 
 Помимо экосистемы, ещё требуются модули:
 
-* Base (имеется в стандартной Ambi Eco)
-* ChatCommands (имеется в стандартной Ambi Eco)
+* Все модули стандартные модули из Ambi Eco
 
 ## Important Links
  * [Documentation](https://titanovskyteam.gitbook.io/darkrp)

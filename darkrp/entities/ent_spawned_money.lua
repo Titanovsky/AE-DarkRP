@@ -8,12 +8,21 @@ ENT.PrintName	= 'Money'
 ENT.Author		= 'Ambi'
 ENT.Category	= 'DarkRP'
 ENT.Spawnable   =  false
+ENT.IsSpawnedMoney = true
 
 ENT.Stats = {
     type = 'Entity',
     module = 'DarkRP',
     date = '19.03.2022 0:16'
 }
+
+function ENT:GetMoney()
+    return self.nw_Money or 0
+end
+
+function ENT:Getamount() -- for compatibility
+    return self:GetMoney()
+end
 
 Ents.Register( ENT.Class, 'ents', ENT )
 
@@ -42,8 +51,6 @@ function ENT:Initialize()
 
     self:SetHealth( 100 )
     self:SetMaxHealth( 100 )
-
-    self.nw_Money = 0
 end
 
 function ENT:OnTakeDamage( damageInfo )
@@ -53,11 +60,24 @@ end
 
 function ENT:Use( ePly )
     if not ePly:IsPlayer() then return end
+    if ( hook.Call( '[Ambi.DarkRP.PlayerCanPickupMoney]', nil, ePly, self, self:GetMoney() ) == false ) then return end 
 
-    hook.Call( '[Ambi.DarkRP.PlayerPickupMoney]', nil, ePly, self, self.nw_Money )
+    hook.Call( '[Ambi.DarkRP.PlayerPickedupMoney]', nil, ePly, self, self:GetMoney() )
     
-    ePly:AddMoney( self.nw_Money )
+    ePly:AddMoney( self:GetMoney() )
     self:Remove()
+end
+
+function ENT:SetMoney( nMoney )
+    if ( nMoney < 0 ) then nMoney = 0 end
+
+    local money = math.floor( nMoney )
+
+    self.nw_Money = money
+end
+
+function ENT:Setamount( nMoney ) -- for compatibility
+    self:SetMoney( nMoney )
 end
 
 Ents.Register( ENT.Class, 'ents', ENT )

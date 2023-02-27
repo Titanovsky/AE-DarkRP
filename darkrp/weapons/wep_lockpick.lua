@@ -71,11 +71,16 @@ function SWEP:PrimaryAttack()
 
         owner:SetDelay( 'AmbiDarkRPLockpick', Ambi.DarkRP.Config.lockpick_delay_player )
 
+        hook.Call( '[Ambi.DarkRP.LockpickStart]', nil, owner, entity )
+
         local chance = math.random( 1, 100 )
         local normal_chance = Ambi.DarkRP.Config.lockpick_chance 
         if ( chance > normal_chance ) then 
             owner:EmitSound( 'physics/wood/wood_box_footstep4.wav' )
             owner:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Взлом не удался ['..chance..'/'..normal_chance..']' ) 
+
+            hook.Call( '[Ambi.DarkRP.LockpickEnd]', nil, owner, entity, false )
+
             return 
         end
 
@@ -83,16 +88,16 @@ function SWEP:PrimaryAttack()
 
         owner:ChatSend( C.AMBI_BLACK, '•  ', C.ABS_WHITE, 'Взлом удался ['..chance..'/'..normal_chance..']' )
 
-        hook.Call( 'lockpickStarted', nil, owner, entity, owner:GetEyeTrace() )
-
         if entity:IsDoor() then
             entity:Fire( 'Unlock' )
             entity:Fire( 'Open' )
         elseif entity:IsFadingDoor() then
             ent:fadeActivate()
         elseif entity:IsKeypad() then
-            --
+            --todo
         end
+
+        hook.Call( '[Ambi.DarkRP.LockpickEnd]', nil, owner, entity, true )
     end
 end
 

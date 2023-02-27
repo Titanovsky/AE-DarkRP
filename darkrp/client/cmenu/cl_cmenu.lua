@@ -1,4 +1,4 @@
-local C, GUI, Draw = Ambi.Packages.Out( '@d' )
+local C, GUI, Draw, UI = Ambi.Packages.Out( '@d' )
 local W, H = ScrW(), ScrH()
 
 local COLOR_CONTEXT = Color( 255, 255, 255, 200 )
@@ -51,9 +51,9 @@ function Ambi.DarkRP.OpenContextMenu()
 
             for i = 1, 9 do
                 local law = Ambi.DarkRP.laws[ i ]
-                local text = string.IsValid( law ) and '['..i..'] '..law or ''
+                local text = string.IsValid( law ) and i..'. '..law or ''
 
-                Draw.SimpleText( 4, ( i - 1 ) * 28, text, '28 Oswald Light', C.ABS_WHITE, 'top-left', 1, C.ABS_BLACK )
+                Draw.SimpleText( 4, ( i - 1 ) * 28, text, UI.SafeFont( '28 Oswald Light' ), C.ABS_WHITE, 'top-left', 1, C.ABS_BLACK )
             end
         end )
 
@@ -139,7 +139,7 @@ function Ambi.DarkRP.OpenContextMenu()
             surface.PlaySound( 'ui/buttonclick.wav' )
         end )
         donate:SetImage( icons.shop )
-        donate:SetFont('22 Ambi')
+        donate:SetFont( UI.SafeFont( '22 Ambi' ) )
         donate.Think = function()
             donate:SetTextColor( HSVToColor(  ( CurTime() * 22 ) % 360, 1, 1 ) )
             if ( CurTime() > delay ) then
@@ -189,7 +189,7 @@ function Ambi.DarkRP.OpenContextMenu()
                 end )
                 wanted:SetImage( ply:IsWanted() and 'icon16/user_delete.png' or 'icon16/user_add.png' )
             end
-            ed:SetFont('18 Ambi')
+            ed:SetFont( UI.SafeFont( '18 Ambi' ) )
         end
 
         if Ambi.DarkRP.Config.cmenu_show_warrant then
@@ -229,7 +229,7 @@ function Ambi.DarkRP.OpenContextMenu()
                 end )
                 warrant:SetImage( ply:HasWarrant() and 'icon16/user_delete.png' or 'icon16/user_add.png' )
             end
-            ed:SetFont('18 Ambi')
+            ed:SetFont( UI.SafeFont( '18 Ambi' ) )
         end
 
         amb_context_menu:AddSpacer()
@@ -240,7 +240,7 @@ function Ambi.DarkRP.OpenContextMenu()
             RunConsoleCommand( 'say', '/'..Ambi.DarkRP.Config.doors_sell_all_command ) 
         end )
         sellalldoors:SetImage( icons.sellalldoors )
-        sellalldoors:SetFont( '18 Ambi' )
+        sellalldoors:SetFont( UI.SafeFont( '18 Ambi' ) )
     end
 
     if Ambi.DarkRP.Config.buy_auto_ammo_enable and Ambi.DarkRP.Config.cmenu_show_buyautoammo then
@@ -248,7 +248,7 @@ function Ambi.DarkRP.OpenContextMenu()
             RunConsoleCommand( 'say', '/'..Ambi.DarkRP.Config.buy_auto_ammo_command )
         end ) 
         ammo:SetImage( icons.ammo )
-        ammo:SetFont('18 Ambi')
+        ammo:SetFont( UI.SafeFont( '18 Ambi' ) )
     end
 
     if Ambi.DarkRP.Config.advert_enable and Ambi.DarkRP.Config.cmenu_show_advert then
@@ -256,7 +256,7 @@ function Ambi.DarkRP.OpenContextMenu()
             Ambi.DarkRP.OpenBoxMenu( 'Реклама', 'Подать', '', function( str ) RunConsoleCommand( 'say', '/advert '..str ) end )
         end )
         advert:SetImage( icons.advert )
-        advert:SetFont('18 Ambi')
+        advert:SetFont( UI.SafeFont( '18 Ambi' ) )
     end
 
     amb_context_menu:AddSpacer()
@@ -283,7 +283,7 @@ function Ambi.DarkRP.OpenContextMenu()
             end )
             demote:SetImage( 'icon16/bullet_delete.png' )
         end
-        ed:SetFont( '18 Ambi' )
+        ed:SetFont( UI.SafeFont( '18 Ambi' ) )
     end
 
     amb_context_menu:AddSpacer()
@@ -299,7 +299,7 @@ function Ambi.DarkRP.OpenContextMenu()
             Ambi.DarkRP.OpenBoxMenu( 'Сумма', 'Передать', '', function( summ ) RunConsoleCommand( 'say', '/'..Ambi.DarkRP.Config.money_give_command..' '..summ ) end )
         end )
         givemoney:SetImage( icons.money )
-        givemoney:SetFont('18 Ambi')
+        givemoney:SetFont( UI.SafeFont( '18 Ambi' ) )
     end
 
     if Ambi.DarkRP.Config.cmenu_show_dropmoney then
@@ -309,7 +309,7 @@ function Ambi.DarkRP.OpenContextMenu()
             Ambi.DarkRP.OpenBoxMenu( 'Сумма', 'Выкинуть', '', function( summ ) RunConsoleCommand( 'say', '/'..Ambi.DarkRP.Config.money_drop_command..' '..summ ) end )
         end )
         dropmoney:SetImage( icons.change_money )
-        dropmoney:SetFont('18 Ambi')
+        dropmoney:SetFont( UI.SafeFont( '18 Ambi' ) )
     end
 
     amb_context_menu:AddSpacer()
@@ -319,7 +319,7 @@ function Ambi.DarkRP.OpenContextMenu()
             RunConsoleCommand( 'say', '/'..Ambi.DarkRP.Config.weapon_drop_command )
         end )
         dropgun:SetImage( icons.dropweapon )
-        dropgun:SetFont('18 Ambi')
+        dropgun:SetFont( UI.SafeFont( '18 Ambi' ) )
     end
 
     amb_context_menu:Open()

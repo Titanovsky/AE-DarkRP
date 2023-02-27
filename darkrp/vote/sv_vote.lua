@@ -16,7 +16,7 @@ function Ambi.DarkRP.CanStartVote()
     return Ambi.DarkRP.Config.vote_max > GetLenTable( Ambi.DarkRP.votes )
 end
 
-function Ambi.DarkRP.StartVote( sTitle, fWin, fFail )
+function Ambi.DarkRP.StartVote( sTitle, fWin, fFail, ePlayerStarter )
     sTitle = sTitle or 'Нет названия'
     fWin = fWin or function() end
     fFail = fFail or function() end
@@ -33,15 +33,17 @@ function Ambi.DarkRP.StartVote( sTitle, fWin, fFail )
         Ambi.DarkRP.votes[ id ] = nil
 
         if ( yes > no ) then
-            Win( sTitle )
+            Win( sTitle, ePlayerStarter )
         else
-            Fail( sTitle )
+            Fail( sTitle, ePlayerStarter )
         end
 
         for _, ply in ipairs( player.GetAll() ) do
             if not ply.last_vote_choices then ply.last_vote_choices = {} end
             ply.last_vote_choices[ id ] = nil 
         end
+
+        hook.Call( '[Ambi.DarkRP.EndVote]', nil, id, yes > no, sTitle, fWin, fFail, ePlayerStarter )
     end
 
     Ambi.DarkRP.votes[ id ] = { title = sTitle, Win = fWin, Fail = fFail, End = EndVote, yes = 0, no = 0 }
@@ -52,6 +54,8 @@ function Ambi.DarkRP.StartVote( sTitle, fWin, fFail )
     net.Broadcast()
 
     timer.Create( 'AmbiDarkRPVote['..id..']', Ambi.DarkRP.Config.vote_time + 0.25, 1, EndVote )
+
+    hook.Call( '[Ambi.DarkRP.StartVote]', nil, id, sTitle, fWin, fFail, ePlayerStarter )
 end
 
 -- == Nets ===================================================================================================
@@ -60,7 +64,7 @@ net.AddString( 'ambi_darkrp_start_choice' )
 
 net.Receive( 'ambi_darkrp_start_choice', function( _, ePly )
     local id = net.ReadUInt( 5 )
-    --if not Ambi.DarkRP.votes[ id ] then ePly:Kick( '[DarkRP] Попытка сделать выбор в голосований, которого не существует!' ) return end -- TODO: Fix
+    
     if not Ambi.DarkRP.votes[ id ] then return end
     if ePly.last_vote_choices and ePly.last_vote_choices[ id ] then ePly:Kick( '[DarkRP] Попытка сделать повторный выбор в голосований!' ) return end
 

@@ -3,18 +3,48 @@ local ENTITY = FindMetaTable( 'Entity' )
 
 DarkRP = DarkRP or {}
 
+DarkRP.doorData = DarkRP.doorData or {}
+DarkRP.hooks = DarkRP.hooks or {}
+DarkRP.disabledDefaults = DarkRP.disabledDefaults or {}
+DarkRP.disabledDefaults["modules"] = {
+    ["afk"]              = true, -- true
+    ["chatsounds"]       = true, -- true
+    ["events"]           = true, -- true
+    ["fpp"]              = false,
+    ["hitmenu"]          = true, -- true
+    ["hud"]              = not Ambi.DarkRP.Config.hud_enable,
+    ["hungermod"]        = not Ambi.DarkRP.Config.hunger_enable,
+    ["playerscale"]      = true, -- true
+    ["sleep"]            = true, -- true
+}
+DarkRP.disabledDefaults["agendas"]          = {}
+DarkRP.disabledDefaults["ammo"]             = {}
+DarkRP.disabledDefaults["demotegroups"]     = {}
+DarkRP.disabledDefaults["doorgroups"]       = {}
+DarkRP.disabledDefaults["entities"]         = {}
+DarkRP.disabledDefaults["food"]             = {}
+DarkRP.disabledDefaults["groupchat"]        = {}
+DarkRP.disabledDefaults["hitmen"]           = {}
+DarkRP.disabledDefaults["jobs"]             = {}
+DarkRP.disabledDefaults["shipments"]        = {}
+DarkRP.disabledDefaults["vehicles"]         = {}
+DarkRP.disabledDefaults["workarounds"]      = {}
+
+RPExtraTeams = RPExtraTeams or {}
 DarkRPEntities = DarkRPEntities or {}
 CustomShipments = CustomShipments or {}
 FoodItems = FoodItems or {}
 
 -- ---------------------------------------------------------------------------------------------------------------------------------------------------
 function PLAYER:getDarkRPVar( sVar )
+    if not sVar then return 0 end
+
     if ( sVar == 'money' ) then return self:GetMoney()
     elseif ( sVar == 'wanted' ) then return self:IsWanted()
     elseif ( sVar == 'warrant' ) then return self:HasWarrant()
     elseif ( sVar == 'salary' ) then return self:GetJobTable().salary
     elseif ( sVar == 'rpname' ) then return self:Nick()
-    elseif ( sVar == 'Energy' ) then return nil
+    elseif ( sVar == 'Energy' ) then return self:GetSatiety()
     elseif ( sVar == 'job' ) then return self:TeamName()
     elseif ( sVar == 'HasGunlicense' ) then return self:HasLicenseGun()
     elseif ( sVar == 'wantedReason' ) then return ''
@@ -23,6 +53,8 @@ function PLAYER:getDarkRPVar( sVar )
     elseif ( sVar == 'AFK' ) then return false
     elseif ( sVar == 'agenda' ) then return ''
     end
+
+    return 1
 end
 PLAYER.GetDarkRPVar = PLAYER.getDarkRPVar
 
@@ -32,6 +64,8 @@ function PLAYER:setDarkRPVar( sVar, anyVal )
     if ( sVar == 'money' ) then return self:SetMoney( anyVal )
     elseif ( sVar == 'wanted' ) then return self:SetWanted( anyVal )
     elseif ( sVar == 'warrant' ) then return self:SetWarrant( anyVal )
+    elseif ( sVar == 'Energy' ) then return self:SetSatiety( anyVal )
+    elseif ( sVar == 'rpname' ) then return self:SetRPName( anyVal )
     elseif ( sVar == 'HasGunlicense' ) then return self:HasLicenseGun()
     elseif ( sVar == 'wantedReason' ) then return ''
     elseif ( sVar == 'AFKDemoted' ) then return false
@@ -40,9 +74,34 @@ function PLAYER:setDarkRPVar( sVar, anyVal )
     end
 
     hook.Call( 'DarkRPVarChanged', nil, self, sVar, oldval, anyVal )
+
+    return anyVal
 end
 PLAYER.SetDarkRPVar = PLAYER.setDarkRPVar
 PLAYER.setSelfDarkRPVar = PLAYER.setDarkRPVar
+
+function PLAYER:changeTeam( nTeam, bForce )
+    return self:SetJob( Ambi.DarkRP.GetJobByIndex( nTeam ) and Ambi.DarkRP.GetJobByIndex( nTeam ).class or nil, bForce )
+end
+
+PLAYER.updateJob = function() 
+end
+
+function PLAYER:teamBan( nTeam, nTime )
+    return self:BlockJob( Ambi.DarkRP.GetJobByIndex( nTeam ) and Ambi.DarkRP.GetJobByIndex( nTeam ).class or nil, nTime )
+end
+
+function PLAYER:teamUnBan( nTeam )
+    return self:UnBlockJob( Ambi.DarkRP.GetJobByIndex( nTeam ) and Ambi.DarkRP.GetJobByIndex( nTeam ).class or nil )
+end
+
+function PLAYER:teamBanTimeLeft() 
+    return 0 
+end
+
+function PLAYER:changeAllowed() 
+    return true 
+end
 
 function PLAYER:getAgendaTable()
     return {}
@@ -106,7 +165,148 @@ function PLAYER:addMoney( nMoney )
     return self:AddMoney( nMoney )
 end
 
-function PLAYER:getJobTable() return self:GetJobTable() end
+function PLAYER:getJobTable() 
+    return self:GetJobTable() 
+end
+
+function PLAYER:sendDoorData()
+    return true
+end
+
+function PLAYER:canKeysLock(ent)
+    local canLock = hook.Run("canKeysLock", self, ent)
+
+    if canLock ~= nil then return canLock end
+    return canLockUnlock(self, ent)
+end
+
+function PLAYER:canKeysUnlock(ent)
+    local canUnlock = hook.Run("canKeysUnlock", self, ent)
+
+    if canUnlock ~= nil then return canUnlock end
+    return canLockUnlock(self, ent)
+end
+
+function PLAYER:keysUnOwnAll()
+    for entIndex, ent in pairs(self.Ownedz or {}) do
+        if not IsValid(ent) or not ent:isKeysOwnable() then self.Ownedz[entIndex] = nil continue end
+        if ent:isMasterOwner(self) then
+            ent:Fire("unlock", "", 0.6)
+        end
+        ent:keysUnOwn(self)
+    end
+
+    for _, ply in ipairs(player.GetAll()) do
+        if ply == self then continue end
+
+        for _, ent in pairs(ply.Ownedz or {}) do
+            if IsValid(ent) and ent:isKeysAllowedToOwn(self) then
+                ent:removeKeysAllowedToOwn(self)
+            end
+        end
+    end
+
+    self.OwnedNumz = 0
+end
+
+function PLAYER:doPropertyTax()
+    if not GAMEMODE.Config.propertytax then return end
+    if self:isCP() and GAMEMODE.Config.cit_propertytax then return end
+
+    local taxables = {}
+
+    for entIndex, ent in pairs(self.Ownedz or {}) do
+        if not IsValid(ent) or not ent:isKeysOwnable() then self.Ownedz[entIndex] = nil continue end
+        local isAllowed = hook.Call("canTaxEntity", nil, self, ent)
+        if isAllowed == false then continue end
+
+        table.insert(taxables, ent)
+    end
+
+    -- co-owned doors
+    for _, ply in ipairs(player.GetAll()) do
+        if ply == self then continue end
+
+        for _, ent in pairs(ply.Ownedz or {}) do
+            if not IsValid(ent) or not ent:isKeysOwnedBy(self) then continue end
+
+            local isAllowed = hook.Call("canTaxEntity", nil, self, ent)
+            if isAllowed == false then continue end
+
+            table.insert(taxables, ent)
+        end
+    end
+
+    local numowned = #taxables
+
+    if numowned <= 0 then return end
+
+    local price = 10
+    local tax = price * numowned + math.random(-5, 5)
+
+    local shouldTax, taxOverride = hook.Call("canPropertyTax", nil, self, tax)
+
+    if shouldTax == false then return end
+
+    tax = taxOverride or tax
+    if tax == 0 then return end
+
+    local canAfford = self:canAfford(tax)
+
+    if canAfford then
+        self:addMoney(-tax)
+        DarkRP.notify(self, 0, 5, DarkRP.getPhrase("property_tax", DarkRP.formatMoney(tax)))
+    else
+        --taxesUnOwnAll(self, taxables)
+        DarkRP.notify(self, 1, 8, DarkRP.getPhrase("property_tax_cant_afford"))
+    end
+
+    hook.Call("onPropertyTax", nil, self, tax, canAfford)
+end
+
+function PLAYER:initiateTax()
+    local taxtime = GAMEMODE.Config.wallettaxtime
+    local uid = self:SteamID64() -- so we can destroy the timer if the player leaves
+    timer.Create("rp_tax_" .. uid, taxtime or 600, 0, function()
+        if not IsValid(self) then
+            timer.Remove("rp_tax_" .. uid)
+
+            return
+        end
+
+        if not GAMEMODE.Config.wallettax then
+            return -- Don't remove the hook in case it's turned on afterwards.
+        end
+
+        local money = self:getDarkRPVar("money")
+        local mintax = GAMEMODE.Config.wallettaxmin / 100
+        local maxtax = GAMEMODE.Config.wallettaxmax / 100 -- convert to decimals for percentage calculations
+        local startMoney = GAMEMODE.Config.startingmoney
+
+
+        -- Variate the taxes between twice the starting money ($1000 by default) and 200 - 2 times the starting money (100.000 by default)
+        local tax = (money - (startMoney * 2)) / (startMoney * 198)
+        tax = math.Min(maxtax, mintax + (maxtax - mintax) * tax)
+
+        local taxAmount = tax * money
+
+        local shouldTax, amount = hook.Call("canTax", GAMEMODE, self, taxAmount)
+
+        if shouldTax == false then return end
+
+        taxAmount = amount or taxAmount
+        taxAmount = math.Max(0, taxAmount)
+
+        self:addMoney(-taxAmount)
+        DarkRP.notify(self, 3, 7, DarkRP.getPhrase("taxday", math.Round(taxAmount / money * 100, 3)))
+
+        hook.Call("onPaidTax", DarkRP.hooks, self, tax, money)
+    end)
+end
+
+function PLAYER:restorePlayerData()
+    --
+end
 
 -- ---------------------------------------------------------------------------------------------------------------------------------------------------
 function ENTITY:Setowning_ent( ePly )
@@ -117,7 +317,345 @@ function ENTITY:Getowning_ent()
     return self:GetShopBuyer()
 end
 
+function ENTITY:isDoor()
+    return Ambi.DarkRP.Config.doors_classes[ self:GetClass() ]
+end
+
+local function GetTeamsForDoor( sCategory )
+    if not sCategory then return nil end
+    
+    local category = Ambi.DarkRP.GetDoorCategory( sCategory )
+    if not category then return nil end
+
+    local teams = {}
+
+    for _, job in ipairs( category ) do
+        teams[ Ambi.DarkRP.GetJob( job ).index ] = true
+    end
+
+    return teams
+end
+
+local function GetAllowedToOwnForDoor( eDoor )
+    if CLIENT then return nil end
+
+    local players = {}
+
+    for _, ply in ipairs( eDoor.owners ) do
+        players[ ply:UserID() ] = true
+    end
+
+    return players
+end
+
+function ENTITY:getDoorData()
+    if SERVER then
+        if not self:isKeysOwnable() then return {} end
+
+        return { 
+            nonOwnable = self.nw_IsBlocked and true or nil,
+            owner = self.nw_IsOwned and self.nw_Owner:UserID() or nil, 
+            teamOwn = GetTeamsForDoor( self.nw_Category ),
+            title = self.nw_Title,
+            allowedToOwn = GetAllowedToOwnForDoor( self ),
+            extraOwners = GetAllowedToOwnForDoor( self ),
+        }
+    else
+        return { 
+            nonOwnable = self.nw_IsBlocked and true or nil,
+            owner = ( self.nw_IsOwned and IsEntity( self.nw_Owner ) ) and self.nw_Owner:UserID() or nil, 
+            teamOwn = GetTeamsForDoor( self.nw_Category ),
+        }
+    end
+end
+
+function ENTITY:doorIndex()
+    return self:CreatedByMap() and self:MapCreationID() or nil
+end
+
+function ENTITY:isLocked()
+    return nil -- https://github.com/FPtje/DarkRP/blob/233c953cb723de7981e5d689b2e6c4168e0272c5/gamemode/modules/doorsystem/sv_doors.lua#L22
+end
+
+function ENTITY:keysLock()
+    self:Fire("lock", "", 0)
+    if isfunction(self.Lock) then self:Lock(true) end -- SCars
+    if IsValid(self.EntOwner) and self.EntOwner ~= self then return self.EntOwner:keysLock() end -- SCars
+
+    hook.Call("onKeysLocked", nil, self)
+end
+
+function ENTITY:keysUnLock()
+    self:Fire("unlock", "", 0)
+    if isfunction(self.UnLock) then self:UnLock(true) end -- SCars
+    if IsValid(self.EntOwner) and self.EntOwner ~= self then return self.EntOwner:keysUnLock() end -- SCars
+
+    hook.Call("onKeysUnlocked", nil, self)
+end
+
+function ENTITY:keysOwn(ply)
+    if self:isKeysAllowedToOwn(ply) then
+        self:addKeysDoorOwner(ply)
+        return
+    end
+
+    local Owner = self:CPPIGetOwner()
+
+    -- Increase vehicle count
+    if self:IsVehicle() then
+        if IsValid(ply) then
+            ply.Vehicles = ply.Vehicles or 0
+            ply.Vehicles = ply.Vehicles + 1
+
+            self.SID = ply.SID
+        end
+
+        -- Decrease vehicle count of the original owner
+        if IsValid(Owner) and Owner ~= ply then
+            Owner.Vehicles = Owner.Vehicles or 1
+            Owner.Vehicles = Owner.Vehicles - 1
+        end
+    end
+
+    if self:IsVehicle() then
+        self:CPPISetOwner(ply)
+    end
+
+    if not self:isKeysOwned() and not self:isKeysOwnedBy(ply) then
+        local doorData = self:getDoorData()
+        doorData.owner = ply:UserID()
+        DarkRP.updateDoorData(self, "owner")
+    end
+
+    ply.OwnedNumz = ply.OwnedNumz or 0
+    if ply.OwnedNumz == 0 and GAMEMODE.Config.propertytax then
+        timer.Create(ply:SteamID64() .. "propertytax", 270, 0, function() ply.doPropertyTax(ply) end)
+    end
+
+    ply.OwnedNumz = ply.OwnedNumz + 1
+
+    ply.Ownedz[self:EntIndex()] = self
+end
+
+function ENTITY:keysUnOwn(ply)
+    if not ply then
+        ply = self:getDoorOwner()
+
+        if not IsValid(ply) then return end
+    end
+
+    if self:isMasterOwner(ply) then
+        local doorData = self:getDoorData()
+        self:removeAllKeysExtraOwners()
+        self:setKeysTitle(nil)
+        doorData.owner = nil
+        DarkRP.updateDoorData(self, "owner")
+    else
+        self:removeKeysDoorOwner(ply)
+    end
+
+    ply.Ownedz[self:EntIndex()] = nil
+    ply.OwnedNumz = math.Clamp((ply.OwnedNumz or 1) - 1, 0, math.huge)
+end
+
+function ENTITY:drawOwnableInfo()
+    local doorDrawing = hook.Call("HUDDrawDoorData", nil, self)
+    if doorDrawing == true then return end
+end
+
+function ENTITY:setKeysNonOwnable(ownable)
+    self:getDoorData().nonOwnable = ownable or nil
+    DarkRP.updateDoorData(self, "nonOwnable")
+end
+
+function ENTITY:setKeysTitle(title)
+    self:getDoorData().title = title ~= "" and title or nil
+    DarkRP.updateDoorData(self, "title")
+end
+
+function ENTITY:setDoorGroup(group)
+    self:getDoorData().groupOwn = group
+    DarkRP.updateDoorData(self, "groupOwn")
+end
+
+function ENTITY:addKeysDoorTeam(t)
+    local doorData = self:getDoorData()
+    doorData.teamOwn = doorData.teamOwn or {}
+    doorData.teamOwn[t] = true
+
+    DarkRP.updateDoorData(self, "teamOwn")
+end
+
+function ENTITY:removeKeysDoorTeam(t)
+    local doorData = self:getDoorData()
+    doorData.teamOwn = doorData.teamOwn or {}
+    doorData.teamOwn[t] = nil
+
+    if fn.Null(doorData.teamOwn) then
+        doorData.teamOwn = nil
+    end
+
+    DarkRP.updateDoorData(self, "teamOwn")
+end
+
+function ENTITY:removeAllKeysDoorTeams()
+    local doorData = self:getDoorData()
+    doorData.teamOwn = nil
+
+    DarkRP.updateDoorData(self, "teamOwn")
+end
+
+function ENTITY:addKeysAllowedToOwn(ply)
+    local doorData = self:getDoorData()
+    doorData.allowedToOwn = doorData.allowedToOwn or {}
+    doorData.allowedToOwn[ply:UserID()] = true
+
+    DarkRP.updateDoorData(self, "allowedToOwn")
+end
+
+function ENTITY:removeKeysAllowedToOwn(ply)
+    local doorData = self:getDoorData()
+    doorData.allowedToOwn = doorData.allowedToOwn or {}
+    doorData.allowedToOwn[ply:UserID()] = nil
+
+    DarkRP.updateDoorData(self, "allowedToOwn")
+end
+
+function ENTITY:removeAllKeysAllowedToOwn()
+    local doorData = self:getDoorData()
+    doorData.allowedToOwn = nil
+
+    DarkRP.updateDoorData(self, "allowedToOwn")
+end
+
+function ENTITY:addKeysDoorOwner(ply)
+    local doorData = self:getDoorData()
+    doorData.extraOwners = doorData.extraOwners or {}
+    doorData.extraOwners[ply:UserID()] = true
+
+    DarkRP.updateDoorData(self, "extraOwners")
+
+    self:removeKeysAllowedToOwn(ply)
+end
+
+function ENTITY:removeKeysDoorOwner(ply)
+    local doorData = self:getDoorData()
+    doorData.extraOwners = doorData.extraOwners or {}
+    doorData.extraOwners[ply:UserID()] = nil
+
+    DarkRP.updateDoorData(self, "extraOwners")
+end
+
+function ENTITY:removeAllKeysExtraOwners()
+    local doorData = self:getDoorData()
+    doorData.extraOwners = nil
+
+    DarkRP.updateDoorData(self, "extraOwners")
+end
+
+function ENTITY:removeDoorData()
+end
+
+function ENTITY:isKeysOwnable()
+    if not IsValid(self) then return false end
+
+    local class = self:GetClass()
+
+    if self:isDoor() or ( GAMEMODE.Config.allowvehicleowning and self:IsVehicle() and (not IsValid(self:GetParent()) or not self:GetParent():IsVehicle())) then
+        return true
+    end
+
+    return false
+end
+
+function ENTITY:isKeysOwned()
+    if IsValid(self:getDoorOwner()) then return true end
+
+    return false
+end
+
+function ENTITY:getDoorOwner()
+    return doorData.first_owner
+end
+
+function ENTITY:isMasterOwner(ply)
+    return ply == self:getDoorOwner()
+end
+
+function ENTITY:isKeysOwnedBy(ply)
+    if self:isMasterOwner(ply) then return true end
+
+    local coOwners = self:getKeysCoOwners()
+    return coOwners and coOwners[ply:UserID()] or false
+end
+
+function ENTITY:isKeysAllowedToOwn(ply)
+    local doorData = self:getDoorData()
+    if not doorData then return false end
+
+    return doorData.allowedToOwn and doorData.allowedToOwn[ply:UserID()] or false
+end
+
+function ENTITY:getKeysNonOwnable()
+    return self.nw_IsBlocked
+end
+
+function ENTITY:getKeysTitle()
+    return self.nw_Title
+end
+
+function ENTITY:getKeysDoorGroup()
+    local doorData = self:getDoorData()
+    if not doorData then return nil end
+
+    return doorData.groupOwn
+end
+
+function ENTITY:getKeysDoorTeams()
+    local doorData = self:getDoorData()
+    if not doorData or table.IsEmpty(doorData.teamOwn or {}) then return nil end
+
+    return doorData.teamOwn
+end
+
+function ENTITY:getKeysAllowedToOwn()
+    local doorData = self:getDoorData()
+    if not doorData then return nil end
+
+    return doorData.allowedToOwn
+end
+
+function ENTITY:getKeysCoOwners()
+    local doorData = self:getDoorData()
+    if not doorData then return nil end
+
+    return doorData.extraOwners
+end
+
 -- ---------------------------------------------------------------------------------------------------------------------------------------------------
+function DarkRP.createJob( sName, tJob )
+    if not Ambi.DarkRP.compatibility_jobs then return end
+    if not sName or not tJob then return end
+
+    local tab = table.Merge( tJob, { name = sName } )
+
+    return Ambi.DarkRP.AddJob( sName, tJob )
+end
+
+function DarkRP.getDoorVars()
+    return {}
+end
+
+function DarkRP.writeNetDoorVar()
+end
+
+function DarkRP.updateDoorData(door, member)
+end
+
+function DarkRP.getDoorVarsByName()
+    return {}
+end
+
 function DarkRP.getCategories()
     local tab = {}
 
@@ -182,7 +720,9 @@ function DarkRP.getCategories()
     return tab
 end
 
-function DarkRP.createCategory() return end
+function DarkRP.createCategory( sCategory ) 
+    return sCategory
+end
 
 function DarkRP.AddDoorGroup( sName, ... )
     local tab = { ... }
@@ -238,7 +778,6 @@ end
 
 function DarkRP.talkToRange(ply, PlayerName, Message, size)
     local ents = ents.FindInSphere(ply:EyePos(), size)
-    local col = team.GetColor(ply:Team())
     local filter = {}
 
     for _, v in ipairs(ents) do
@@ -298,6 +837,10 @@ function DarkRP.placeEntity(ent, tr, ply)
     ent:SetPos(vFlushPoint)
 end
 
+function DarkRP.getPhrase( sText )
+    return sText or ''
+end
+
 function DarkRP.findEmptyPos(pos, ignore, distance, step, area)
     if DarkRP.isEmpty(pos, ignore) and DarkRP.isEmpty(pos + area, ignore) then
         return pos
@@ -339,465 +882,141 @@ function DarkRP.resetLaws()
     Ambi.DarkRP.ClearLaws()
 end
 
--- ---------------------------------------------------------------------------------------------------------------------------------------------------
-hook.Add( '[Ambi.DarkRP.SetLaw]', 'Ambi.DarkRP.Compatibility', function( ePly, nID, sText, sOldText )
-    if ( sText == '' ) then hook.Call( 'removeLaw', nil, nID, sText, ePly ) else hook.Call( 'addLaw', nil, nID, sText, ePly ) end
-end )
+function DarkRP.getLaws()
+    return Ambi.DarkRP.GetLaws()
+end
 
-hook.Add( '[Ambi.DarkRP.ClearLaws]', 'Ambi.DarkRP.Compatibility', function( ePlу )
-    hook.Call( 'resetLaws', nil, ePly )
-end )
+function DarkRP.deLocalise( text )
+    return string.match(text, "^#([a-zA-Z_]+)$") and text .. " " or text
+end
 
-hook.Add( '[Ambi.DarkRP.CanWarrant]', 'Ambi.DarkRP.Compatibility', function( ePly, eTarget, sReason )
-    if ( hook.Call( 'canRequestWarrant', nil, eTarget, ePly, sReason ) == false ) then return false end
-end )
+function DarkRP.initDatabase()
+    hook.Call("DarkRPDBInitialized")
 
-hook.Add( '[Ambi.DarkRP.CanUnWarrant]', 'Ambi.DarkRP.Compatibility', function( ePly, eTarget )
-    if ( hook.Call( 'canRemoveWarrant', nil, eTarget, ePly ) == false ) then return false end
-end )
+    return true
+end
 
-hook.Add( '[Ambi.DarkRP.CanWanted]', 'Ambi.DarkRP.Compatibility', function( ePly, eTarget, sReason )
-    if ( hook.Call( 'canWanted', nil, eTarget, ePly, sReason ) == false ) then return false end
-end )
+function DarkRP.storeRPName(ply, name)
+    if not IsValid( ply ) then return end
+    if not name or string.len(name) < 2 then return end
+    hook.Call("onPlayerChangedName", nil, ply, ply:getDarkRPVar("rpname"), name)
+    ply:setDarkRPVar("rpname", name)
+end
 
-hook.Add( '[Ambi.DarkRP.CanUnWanted]', 'Ambi.DarkRP.Compatibility', function( ePly, eTarget )
-    if ( hook.Call( 'canUnwant', nil, eTarget, ePly ) == false ) then return false end
-end )
+function DarkRP.retrieveRPNames(name, callback)
+    local tab = sql.Query( "SELECT COUNT(*) AS count FROM darkrp2_rpname WHERE RPName = " .. sql.SQLStr(name) .. ";" )
+    local count = tab and tonumber( tab.count ) or 0
+    local taken = count > 0
 
-hook.Add( '[Ambi.DarkRP.BoughtDoor]', 'Ambi.DarkRP.Compatibility', function( ePly, eDoor )
-    hook.Call( 'playerBoughtDoor', nil, ePly, eDoor, Ambi.DarkRP.Config.doors_cost_buy )
-end )
+    if callback then callback( taken ) end
+end
 
-hook.Add( '[Ambi.DarkRP.CanBuyDoor]', 'Ambi.DarkRP.Compatibility', function( ePly, eDoor )
-    if ( hook.Call( 'playerBuyDoor', nil, ePly, eDoor ) == false ) then return false end
-end )
+function DarkRP.offlinePlayerData(steamid, callback, failed) 
+    -- https://github.com/FPtje/DarkRP/blob/deb882d58f6ea92a60c73bb22fdda5e80cd96125/gamemode/modules/base/sv_data.lua#L311
+    if failed then failed() end
+end
 
-hook.Add( '[Ambi.DarkRP.CanBuyShopItem]', 'Ambi.DarkRP.Compatibility', function( ePly, sClass, bForce ) 
-    local item = Ambi.DarkRP.GetShopItem( sClass )
+function DarkRP.retrievePlayerData(ply, callback, failed, attempts, err)
+    -- https://github.com/FPtje/DarkRP/blob/deb882d58f6ea92a60c73bb22fdda5e80cd96125/gamemode/modules/base/sv_data.lua#L364
+end
 
-    if item.shipment then
-        if ( hook.Call( 'canBuyShipment', nil, ePly, item ) == false ) then return false end
-    elseif item.weapon then
-        if ( hook.Call( 'canBuyPistol', nil, ePly, item ) == false ) then return false end
-    else
-        if ( hook.Call( 'canBuyCustomEntity', nil, ePly, item ) == false ) then return false end
+function DarkRP.createPlayerData(ply, name, wallet, salary)
+    --
+end
+
+function DarkRP.storeMoney(ply, amount)
+    if not isnumber(amount) or amount < 0 or amount >= 1 / 0 then return end
+    --
+end
+
+function DarkRP.storeSalary(ply, amount)
+    ply:setSelfDarkRPVar("salary", math.floor(amount))
+
+    return amount
+end
+
+function DarkRP.retrieveSalary(ply, callback)
+    local val =
+        ply:getJobTable() and ply:getJobTable().salary or
+        RPExtraTeams[GAMEMODE.DefaultTeam].salary or
+        (GM or GAMEMODE).Config.normalsalary
+
+    if callback then callback(val) end
+
+    return val
+end
+
+function DarkRP.hookStub( tTab )
+    --? print in console?
+end
+
+function DarkRP.stub( tTab )
+    --? print in console?
+end
+
+function DarkRP.errorNoHalt( sError )
+    Ambi.General.Error( 'DarkRP', sError )
+end
+
+function DarkRP.error( sError )
+    Ambi.General.Error( 'DarkRP', sError )
+end
+
+DarkRP.chatCommands = DarkRP.chatCommands or {}
+
+function DarkRP.defineChatCommand( sCommand, fFunc, nDelay )
+    if not Ambi.ChatCommands then return end
+
+    Ambi.ChatCommands.Add( sCommand, 'DarkRP | Compatibility', 'Reg for Compatiblity', nDelay, fFunc )
+end
+
+function DarkRP.definePrivilegedChatCommand( sCommand, sText, fFunc )
+    if not Ambi.ChatCommands then return end
+
+    Ambi.ChatCommands.Add( sCommand, 'DarkRP | Compatibility', sText, 1, function( ePly, tArgs )
+        if not ePly:IsSuperAdmin() then return end
+
+        fFunc( ePly, tArgs )
+    end )
+end
+
+function DarkRP.declareChatCommand( tTab )
+    if not tTab.command then return end
+    tTab.description = tTab.description or ''
+
+    tTab.command = string.lower( tTab.command )
+
+    DarkRP.chatCommands[tTab.command] = DarkRP.chatCommands[tTab.command] or tTab
+
+    for k, v in pairs(tTab) do
+        DarkRP.chatCommands[tTab.command][k] = v
     end
-end )
+end
 
-hook.Add( '[Ambi.DarkRP.CanArrest]', 'Ambi.DarkRP.Compatibility', function( ePolice, ePly, sReason, nTime )
-    local can, msg = hook.Call( 'canArrest', nil, ePolice, ePly )
+function DarkRP.removeChatCommand(command)
+    DarkRP.chatCommands[string.lower(command)] = nil
+end
 
-    if ( can == false ) then ePolice:ChatPrint( msg or '' ) return false end
-end )
+function DarkRP.chatCommandAlias(command, ...)
+    local name
+    for k, v in pairs{...} do
+        name = string.lower(v)
 
-hook.Add( '[Ambi.DarkRP.CanUnArrest]', 'Ambi.DarkRP.Compatibility', function( ePolice, ePly )
-    if not IsValid( ePolice ) then return end
-
-    local can, msg = hook.Call( 'canUnarrest', nil, ePolice, ePly )
-
-    if ( can == false ) then ePolice:ChatPrint( msg or '' ) return false end
-end )
-
-hook.Add( '[Ambi.DarkRP.CanDoorRam]', 'Ambi.DarkRP.Compatibility', function( ePly, eObj )
-    if ( hook.Call( 'canDoorRam', nil, ePly, ePly:GetEyeTrace(), eObj ) == false ) then return false end
-end )
-
-hook.Add( '[Ambi.DarkRP.OnDoorRamUsed]', 'Ambi.DarkRP.Compatibility', function( ePly, eObj )
-    if ( hook.Call( 'onDoorRamUsed', nil, true, ePly, ePly:GetEyeTrace() ) == false ) then return false end
-end )
-
-hook.Add( '[Ambi.DarkRP.CanDropWeapon]', 'Ambi.DarkRP.Compatibility', function( ePly, sClass, eWeapon )
-    if ( hook.Call( 'canDropWeapon', nil, ePly, eWeapon ) == false ) then return false end
-end )
-
-hook.Add( '[Ambi.DarkRP.CanUseKeysLock]', 'Ambi.DarkRP.Compatibility', function( ePly, eDoor )
-    if ( hook.Call( 'canKeysLock', nil, ePly, eDoor ) == false ) then return false end
-end )
-
-hook.Add( '[Ambi.DarkRP.CanUseKeysUnLock]', 'Ambi.DarkRP.Compatibility', function( ePly, eDoor )
-    if ( hook.Call( 'canKeysUnlock', nil, ePly, eDoor ) == false ) then return false end
-end )
-
-hook.Add( '[Ambi.DarkRP.CanUseLockpick]', 'Ambi.DarkRP.Compatibility', function( ePly, eObj )
-    if ( hook.Call( 'canLockpick', nil, ePly, eObj, ePly:GetEyeTrace() ) == false ) then return false end
-end )
-
-hook.Add( 'InitPostEntity', 'Ambi.DarkRP.Compatibility', function() 
-    hook.Call( 'DarkRPDBInitialized' )
-    hook.Call( 'DarkRPStartedLoading' )
-    hook.Call( 'DarkRPFinishedLoading' )
-end )
-
-hook.Add( '[Ambi.DarkRP.Advert]', 'Ambi.DarkRP.Compatibility', function( ePly, sText )
-    hook.Call( 'playerAdverted', nil, ePly, sText )
-end )
-
-hook.Add( '[Ambi.DarkRP.PlayerArrested]', 'Ambi.DarkRP.Compatibility', function( ePly, ePolice, sReason, nTime )
-    hook.Call( 'playerArrested', nil, ePly, nTime, ePolice )
-end )
-
-hook.Add( '[Ambi.DarkRP.BuyShopItem]', 'Ambi.DarkRP.Compatibility', function( ePly, eObj, sClass, bForce, tItem )
-    if tItem.shipment then hook.Call( 'playerBoughtShipment', nil, ePly, tItem, eObj, tItem.price )
-    elseif tItem.weapon then hook.Call( 'playerBoughtPistol', nil, ePly, tItem, eObj, tItem.price )
-    else hook.Call( 'playerBoughtCustomEntity', nil, ePly, tItem, eObj, tItem.price )
+        DarkRP.chatCommands[name] = {command = name}
+        setmetatable(DarkRP.chatCommands[name], {
+            __index = DarkRP.chatCommands[command]
+        })
     end
-end )
+end
 
-hook.Add( '[Ambi.DarkRP.DroppedWeapon]', 'Ambi.DarkRP.Compatibility', function( ePly, eWeapon, tWeapon ) 
-    hook.Call( 'onDarkRPWeaponDropped', nil, ePly, eWeapon, tWeapon )
-end )
+function DarkRP.getChatCommand(command)
+    return DarkRP.chatCommands[string.lower(command)]
+end
 
-hook.Add( '[Ambi.DarkRP.DroppedMoney]', 'Ambi.DarkRP.Compatibility', function( ePly, eObj ) 
-    hook.Call( 'playerDroppedMoney', nil, ePly, eObj.nw_Money, eObj )
-end )
+function DarkRP.getChatCommands()
+    return DarkRP.chatCommands
+end
 
-hook.Add( '[Ambi.DarkRP.TransferedMoney]', 'Ambi.DarkRP.Compatibility', function( ePly, eTarget, nCount ) 
-    hook.Call( 'playerGaveMoney', nil, ePly, eTarget, nCount )
-end )
-
-hook.Add( '[Ambi.DarkRP.PlayerPickupMoney]', 'Ambi.DarkRP.Compatibility', function( ePly, eMoney, nMoney ) 
-    hook.Call( 'playerPickedUpMoney', nil, ePly, nMoney, eMoney )
-end )
-
-hook.Add( '[Ambi.DarkRP.PlayerPickupWeapon]', 'Ambi.DarkRP.Compatibility', function( ePly, eObj ) 
-    hook.Call( 'PlayerPickupDarkRPWeapon', nil, ePly, eObj )
-end )
-
-hook.Add( '[Ambi.DarkRP.CanSellDoor]', 'Ambi.DarkRP.Compatibility', function( ePly, eObj ) 
-    if not Ambi.DarkRP.compatibility_doors then return end
-
-    local can, msg = hook.Call( 'playerSellDoor', nil, ePly, eObj )
-
-    if ( can == false ) then ePly:ChatPrint( msg ) return end
-end )
-
-hook.Add( '[Ambi.DarkRP.PlayerUnArrested]', 'Ambi.DarkRP.Compatibility', function( ePly, ePolice ) 
-    hook.Call( 'playerUnArrested', nil, ePly, ePolice )
-end )
-
-hook.Add( '[Ambi.DarkRP.PlayerUnWanted]', 'Ambi.DarkRP.Compatibility', function( ePly, ePolice ) 
-    hook.Call( 'playerUnWanted', nil, ePly, ePolice )
-end )
-
-hook.Add( '[Ambi.DarkRP.PlayerUnWarranted]', 'Ambi.DarkRP.Compatibility', function( ePly, ePolice ) 
-    hook.Call( 'playerUnWarranted', nil, ePly, ePolice )
-end )
-
-hook.Add( '[Ambi.DarkRP.SetMoney]', 'Ambi.DarkRP.Compatibility', function( ePly, nMoney, nOldMoney )
-    hook.Call( 'playerWalletChanged', nil, ePly, nMoney, nOldMoney )
-end )
-
-hook.Add( '[Ambi.DarkRP.PlayerWanted]', 'Ambi.DarkRP.Compatibility', function( ePly, ePolice, sReason )
-    hook.Call( 'playerWanted', nil, ePly, ePolice, sReason )
-end )
-
-hook.Add( '[Ambi.DarkRP.PlayerWarrant]', 'Ambi.DarkRP.Compatibility', function( ePly, ePolice, sReason )
-    hook.Call( 'playerWarranted', nil, ePly, ePolice, sReason )
-end )
-
-hook.Add( '[Ambi.DarkRP.AddedShopItem]', 'Ambi.DarkRP.Compatibility', function( sClass, tItem )
-    if not tItem.shipment then 
-        local index = #DarkRPEntities + 1
-        for i, v in ipairs( DarkRPEntities ) do
-            if ( v.class == sClass ) then index = i break end
-        end
-
-        tItem.class = sClass
-        DarkRPEntities[ index ] = tItem 
-    else
-        CustomShipments[ sClass ] = tItem 
-    end
-end )
-
-hook.Add( '[Ambi.DarkRP.RemovedShopItem]', 'Ambi.DarkRP.Compatibility', function( sClass, tItem )
-    if not tItem.shipment then 
-        local index = #DarkRPEntities + 1
-        for i, v in ipairs( DarkRPEntities ) do
-            if ( v.class == sClass ) then index = i break end
-        end
-        
-        DarkRPEntities[ index ] = {} 
-    else 
-        CustomShipments[ sClass ] = nil 
-    end
-end )
-
--- ---------------------------------------------------------------------------------------------------------------------------------------------------
-GAMEMODE = GAMEMODE or {}
-GAMEMODE.Config = GAMEMODE.Config or {}
-GM = GM or {}
-setmetatable( GM, { __index = GAMEMODE } )
-
-GAMEMODE.Config.voice3D = Ambi.DarkRP.Config.chat_voice_3d
-GAMEMODE.Config.AdminsCopWeapons = true
-GAMEMODE.Config.allowActs = true
-GAMEMODE.Config.allowjobswitch = true
-GAMEMODE.Config.allowrpnames = false
-GAMEMODE.Config.allowsprays = false
-GAMEMODE.Config.allowvehicleowning = false
-GAMEMODE.Config.allowvnocollide = true
-GAMEMODE.Config.alltalk = Ambi.DarkRP.Config.chat_restrict_enable
-GAMEMODE.Config.antimultirun = false
-GAMEMODE.Config.autovehiclelock = false
-GAMEMODE.Config.babygod = false
-GAMEMODE.Config.canforcedooropen = false
-GAMEMODE.Config.chatsounds = false
-GAMEMODE.Config.chiefjailpos = false
-GAMEMODE.Config.cit_propertytax = false
-GAMEMODE.Config.copscanunfreeze = false
-GAMEMODE.Config.copscanunweld = false
-GAMEMODE.Config.cpcanarrestcp = Ambi.DarkRP.Config.police_system_arrest_can_other_police
-GAMEMODE.Config.currencyLeft = true
-GAMEMODE.Config.customjobs = Ambi.DarkRP.Config.jobs_can_change_name
-GAMEMODE.Config.customspawns = true
-GAMEMODE.Config.deathblack = false
-GAMEMODE.Config.showdeaths = true
-GAMEMODE.Config.deadtalk = true
-GAMEMODE.Config.deadvoice = false
-GAMEMODE.Config.deathpov = false
-GAMEMODE.Config.decalcleaner = false
-GAMEMODE.Config.disallowClientsideScripts = false
-GAMEMODE.Config.doorwarrants = true
-GAMEMODE.Config.dropmoneyondeath = false
-GAMEMODE.Config.droppocketarrest = false
-GAMEMODE.Config.droppocketdeath = false
-GAMEMODE.Config.dropweapondeath = false
-GAMEMODE.Config.dropspawnedweapons = false
-GAMEMODE.Config.dynamicvoice = false
-GAMEMODE.Config.earthquakes = false
-GAMEMODE.Config.enablebuypistol = false
-GAMEMODE.Config.enforceplayermodel = true
-GAMEMODE.Config.globalshow = Ambi.DarkRP.Config.hud_3d_enable
-GAMEMODE.Config.ironshoot = false
-GAMEMODE.Config.showjob = Ambi.DarkRP.Config.hud_3d_show_job
-GAMEMODE.Config.letters = false
-GAMEMODE.Config.license = false
-GAMEMODE.Config.lockdown = true
-GAMEMODE.Config.lockpickfading = true
-GAMEMODE.Config.logging = true
-GAMEMODE.Config.lottery = false
-GAMEMODE.Config.showname = Ambi.DarkRP.Config.hud_3d_show_name
-GAMEMODE.Config.showhealth = Ambi.DarkRP.Config.hud_3d_show_health
-GAMEMODE.Config.needwantedforarrest = Ambi.DarkRP.Config.police_system_arrest_only_wanted
-GAMEMODE.Config.noguns = false
-GAMEMODE.Config.norespawn = not Ambi.DarkRP.Config.jobs_respawn
-GAMEMODE.Config.instantjob = false
-GAMEMODE.Config.npcarrest = false
-GAMEMODE.Config.ooc = true
-GAMEMODE.Config.propertytax = false
-GAMEMODE.Config.proppaying = false
-GAMEMODE.Config.propspawning = true
-GAMEMODE.Config.removeclassitems = true
-GAMEMODE.Config.removeondisconnect = false
-GAMEMODE.Config.respawninjail = true
-GAMEMODE.Config.restrictallteams = false
-GAMEMODE.Config.restrictbuypistol = false
-GAMEMODE.Config.restrictdrop = false
-GAMEMODE.Config.revokeLicenseOnJobChange = false
-GAMEMODE.Config.shouldResetLaws = false
-GAMEMODE.Config.strictsuicide = Ambi.DarkRP.Config.restrict_can_suicide
-GAMEMODE.Config.telefromjail = false
-GAMEMODE.Config.teletojail = false
-GAMEMODE.Config.unlockdoorsonstart = false
-GAMEMODE.Config.voiceradius = Ambi.DarkRP.Config.chat_voice_local_enable
-GAMEMODE.Config.wallettax = false
-GAMEMODE.Config.wantedrespawn = false
-GAMEMODE.Config.wantedsuicide = false
-GAMEMODE.Config.realisticfalldamage = false
-GAMEMODE.Config.printeroverheat = false
-GAMEMODE.Config.weaponCheckerHideDefault = true
-GAMEMODE.Config.weaponCheckerHideNoLicense = false
-
-GAMEMODE.Config.adminnpcs                     = Ambi.DarkRP.Config.restrict_spawn_npcs
-GAMEMODE.Config.adminsents                    = Ambi.DarkRP.Config.restrict_spawn_entities
-GAMEMODE.Config.adminvehicles                 = Ambi.DarkRP.Config.restrict_spawn_vehicles
-GAMEMODE.Config.adminweapons                  = Ambi.DarkRP.Config.restrict_spawn_weapons
-GAMEMODE.Config.arrestspeed                   = 120
-GAMEMODE.Config.babygodtime                   = 5
-GAMEMODE.Config.chatsoundsdelay               = 5
-GAMEMODE.Config.deathfee                      = 30
-GAMEMODE.Config.decaltimer                    = 120
-GAMEMODE.Config.demotetime                    = Ambi.DarkRP.Config.jobs_demote_delay
-GAMEMODE.Config.doorcost                      = Ambi.DarkRP.Config.doors_cost_buy
-GAMEMODE.Config.entremovedelay                = 0
-GAMEMODE.Config.gunlabweapon                  = "weapon_p2282"
-GAMEMODE.Config.jailtimer                     = Ambi.DarkRP.Config.police_system_arrest_time
-GAMEMODE.Config.lockdowndelay                 = 120
-GAMEMODE.Config.maxadvertbillboards           = 0
-GAMEMODE.Config.maxCheques                    = 0
-GAMEMODE.Config.maxdoors                      = Ambi.DarkRP.Config.doors_max
-GAMEMODE.Config.maxdrugs                      = 0
-GAMEMODE.Config.maxfoods                      = 2
-GAMEMODE.Config.maxfooditems                  = 20
-GAMEMODE.Config.maxlawboards                  = 0
-GAMEMODE.Config.maxletters                    = 0
-GAMEMODE.Config.maxlotterycost                = 0
-GAMEMODE.Config.maxvehicles                   = 0
-GAMEMODE.Config.microwavefoodcost             = 30
-GAMEMODE.Config.minlotterycost                = 30
-GAMEMODE.Config.moneyRemoveTime               = 600
-GAMEMODE.Config.mprintamount                  = 250
-GAMEMODE.Config.normalsalary                  = 45
-GAMEMODE.Config.npckillpay                    = 10
-GAMEMODE.Config.paydelay                      = Ambi.DarkRP.Config.player_payday_delay
-GAMEMODE.Config.pocketitems                   = 0
-GAMEMODE.Config.pricecap                      = 500
-GAMEMODE.Config.pricemin                      = 50
-GAMEMODE.Config.propcost                      = 0
-GAMEMODE.Config.quakechance                   = 4000
-GAMEMODE.Config.respawntime                   = 1
-GAMEMODE.Config.changejobtime                 = 10
-GAMEMODE.Config.runspeed                      = 240
-GAMEMODE.Config.runspeedcp                    = 255
-GAMEMODE.Config.searchtime                    = 30
-GAMEMODE.Config.ShipmentSpamTime              = 3
-GAMEMODE.Config.shipmentspawntime             = 10
-GAMEMODE.Config.startinghealth                = 100
-GAMEMODE.Config.startingmoney                 = 500
-GAMEMODE.Config.stunstickdamage               = 1000
-GAMEMODE.Config.vehiclecost                   = 40
-GAMEMODE.Config.wallettaxmax                  = 5
-GAMEMODE.Config.wallettaxmin                  = 1
-GAMEMODE.Config.wallettaxtime                 = 600
-GAMEMODE.Config.wantedtime                    = 120
-GAMEMODE.Config.walkspeed                     = 160
-GAMEMODE.Config.falldamagedamper              = 15
-GAMEMODE.Config.falldamageamount              = 10
-GAMEMODE.Config.printeroverheatchance         = 22
-GAMEMODE.Config.printerreward                 = 950
-
-GAMEMODE.Config.talkDistance    = Ambi.DarkRP.Config.chat_max_length
-GAMEMODE.Config.whisperDistance = Ambi.DarkRP.Config.chat_max_length_whisper
-GAMEMODE.Config.yellDistance    = Ambi.DarkRP.Config.chat_max_length_scream
-GAMEMODE.Config.meDistance      = Ambi.DarkRP.Config.chat_max_length
-GAMEMODE.Config.voiceDistance   = Ambi.DarkRP.Config.chat_voice_max_length
-
-GAMEMODE.Config.MoneyClass = Ambi.DarkRP.Config.money_drop_entity_class
-GAMEMODE.Config.moneyModel = Ambi.DarkRP.Config.money_drop_entity_model
-GAMEMODE.Config.lockdownsound = Ambi.DarkRP.Config.goverment_lockdown_sound
-GAMEMODE.Config.DarkRPSkin = "DarkRP"
-GAMEMODE.Config.currency = Ambi.DarkRP.Config.money_currency_symbol
-GAMEMODE.Config.chatCommandPrefix = "/"
-GAMEMODE.Config.F1MenuHelpPage = 'https://github.com/Titanovsky/AE-DarkRP'
-GAMEMODE.Config.F1MenuHelpPageTitle = 'DarkRP'
-GAMEMODE.Config.notificationSound = "buttons/lightswitch2.wav"
-
-GAMEMODE.Config.DefaultPlayerGroups = {
-    [ 'STEAM_0:1:95303327' ] = 'superadmin',
-}
-
-GAMEMODE.Config.DisabledCustomModules = {
-    ["hudreplacement"] = false,
-    ["extraf4tab"] = false,
-}
-
--- The list of weapons that players are not allowed to drop. Items set to true are not allowed to be dropped.
-GAMEMODE.Config.DisallowDrop = Ambi.DarkRP.Config.weapon_drop_blocked
-
--- The list of weapons people spawn with.
-GAMEMODE.Config.DefaultWeapons = Ambi.DarkRP.Config.player_base_weapons
-
-GAMEMODE.Config.CategoryOverride = {
-    jobs = {
-        ["Citizen"]                             = "Citizens",
-        ["Hobo"]                                = "Citizens",
-        ["Gun Dealer"]                          = "Citizens",
-        ["Medic"]                               = "Citizens",
-        ["Civil Protection"]                    = "Civil Protection",
-        ["Gangster"]                            = "Gangsters",
-        ["Mob boss"]                            = "Gangsters",
-        ["Civil Protection Chief"]              = "Civil Protection",
-        ["Mayor"]                               = "Civil Protection",
-    },
-    entities = {
-        ["Drug lab"]                            = "Other",
-        ["Money printer"]                       = "Other",
-        ["Gun lab"]                             = "Other",
-
-    },
-    shipments = {
-        ["AK47"]                                = "Rifles",
-        ["MP5"]                                 = "Rifles",
-        ["M4"]                                  = "Rifles",
-        ["Mac 10"]                              = "Other",
-        ["Pump shotgun"]                        = "Shotguns",
-        ["Sniper rifle"]                        = "Snipers",
-
-    },
-    weapons = {
-        ["Desert eagle"]                        = "Pistols",
-        ["Fiveseven"]                           = "Pistols",
-        ["Glock"]                               = "Pistols",
-        ["P228"]                                = "Pistols",
-    },
-    vehicles = {}, -- There are no default vehicles.
-    ammo = {
-        ["Pistol ammo"]                         = "Other",
-        ["Shotgun ammo"]                        = "Other",
-        ["Rifle ammo"]                          = "Other",
-    },
-}
-
-GAMEMODE.Config.AdminWeapons = {
-    "weapon_keypadchecker",
-}
-
-GAMEMODE.Config.DefaultLaws = {
-    "Do not attack other citizens except in self-defence.",
-    "Do not steal or break into people's homes.",
-    "Money printers/drugs are illegal.",
-}
-
-GAMEMODE.Config.PocketBlacklist = {
-    ["fadmin_jail"] = true,
-    ["meteor"] = true,
-    ["door"] = true,
-    ["func_"] = true,
-    ["player"] = true,
-    ["beam"] = true,
-    ["worldspawn"] = true,
-    ["env_"] = true,
-    ["path_"] = true,
-    ["prop_physics"] = true,
-    ["money_printer"] = true,
-    ["gunlab"] = true,
-    ["prop_dynamic"] = true,
-    ["prop_vehicle_prisoner_pod"] = true,
-    ["keypad_wire"] = true,
-    ["gmod_button"] = true,
-    ["gmod_rtcameraprop"] = true,
-    ["gmod_cameraprop"] = true,
-    ["gmod_dynamite"] = true,
-    ["gmod_thruster"] = true,
-    ["gmod_light"] = true,
-    ["gmod_lamp"] = true,
-    ["gmod_emitter"] = true,
-}
-
-GAMEMODE.Config.noStripWeapons = {
-}
-
-GAMEMODE.Config.preventClassItemRemoval = {
-    ["gunlab"] = false,
-    ["microwave"] = false,
-    ["spawned_shipment"] = false,
-}
-
-GAMEMODE.Config.allowedProperties = Ambi.DarkRP.Config.restrict_properties
-
-GAMEMODE.Config.hideNonBuyable = false
-GAMEMODE.Config.hideTeamUnbuyable = false
-
-GAMEMODE.Config.afkdemotetime = 600
-GAMEMODE.Config.AFKDelay = 300
-
-GAMEMODE.Config.minHitPrice = 200
-GAMEMODE.Config.maxHitPrice = 50000
-GAMEMODE.Config.minHitDistance = 150
-GAMEMODE.Config.hudText = "I am a hitman.\nPress E on me to request a hit!"
-GAMEMODE.Config.hitmanText = "Hit\naccepted!"
-GAMEMODE.Config.hitTargetCooldown = 120
-GAMEMODE.Config.hitCustomerCooldown = 240
-
-GAMEMODE.Config.hungerspeed = 2
-GAMEMODE.Config.starverate = 3
+function DarkRP.getSortedChatCommands()
+    return DarkRP.chatCommands
+end

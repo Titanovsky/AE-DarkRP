@@ -1,4 +1,4 @@
-local C, GUI, Draw, Gen = Ambi.Packages.Out( '@d, gen' )
+local C, GUI, Draw, UI, Gen = Ambi.Packages.Out( '@d, gen' )
 local W, H = ScrW(), ScrH()
 local COLOR_GREEN2, COLOR_RED2 = ColorAlpha( C.AMBI_GREEN, 100 ), ColorAlpha( C.AMBI_RED, 100 )
 Ambi.DarkRP.votes = Ambi.DarkRP.votes or {}
@@ -38,15 +38,15 @@ function Ambi.DarkRP.StartVote( nID, sTitle )
 
     LocalPlayer():EmitSound( 'Town.d1_town_02_elevbell1', 100, 100 )
 
-    local tx = Draw.GetTextSizeX( '20 Ambi', sTitle )
-    local fw, fh = tx + 14, 40
+    local tx = Draw.GetTextSizeX( UI.SafeFont( '20 Ambi' ), sTitle )
+    local fw, fh = math.max( tx + 14, 140 ), 40 -- fw should be with nice size for screen
     local offset_y = fh * ( nID - 1 )
 
     local frame = GUI.DrawFrame( nil, fw, fh, 2, ( 2 * nID ) + 1 * offset_y, '', false, false, false, function( self, w, h ) 
         Draw.Box( w, h, 0, 0, C.ABS_BLACK )
         Draw.Box( w - 4, h - 4, 2, 2, C.AMBI_BLACK )
         
-        Draw.SimpleText( w / 2, 0, sTitle, '20 Ambi', C.ABS_WHITE, 'top-center', 1, C.ABS_BLACK )
+        Draw.SimpleText( w / 2, 0, sTitle, UI.SafeFont( '20 Ambi' ), C.ABS_WHITE, 'top-center', 1, C.ABS_BLACK )
         Draw.SimpleText( w / 2, h - 2, tostring( math.floor( timer.TimeLeft( 'AmbiDarkRPVote['..nID..']' ) + 1 ) ), 'DebugFixed', C.AMBI_GRAY, 'bottom-center', 1, C.ABS_BLACK )
     end )
     frame:SetKeyboardInputEnabled( true )
@@ -69,7 +69,7 @@ function Ambi.DarkRP.StartVote( nID, sTitle )
         Draw.Box( w, h, 0, 0, COLOR_GREEN2 )
         Draw.Box( w - 4, h - 4, 2, 2, self.color )
 
-        Draw.SimpleText( w / 2, h / 2, 'Да', '16 Arial', C.FLAT_GREEN, 'center', 1, C.ABS_BLACK )
+        Draw.SimpleText( w / 2, h / 2, 'Да', UI.SafeFont( '16 Arial' ), C.FLAT_GREEN, 'center', 1, C.ABS_BLACK )
     end )
     yes.color = C.AMBI_GREEN
     GUI.OnCursor( yes, function()
@@ -89,7 +89,7 @@ function Ambi.DarkRP.StartVote( nID, sTitle )
         Draw.Box( w, h, 0, 0, COLOR_RED2 )
         Draw.Box( w - 4, h - 4, 2, 2, self.color )
 
-        Draw.SimpleText( w / 2, h / 2, 'Нет', '16 Arial', C.RU_RED, 'center', 1, C.ABS_BLACK )
+        Draw.SimpleText( w / 2, h / 2, 'Нет', UI.SafeFont( '16 Arial' ), C.RU_RED, 'center', 1, C.ABS_BLACK )
     end )
     no.color = C.AMBI_RED
     GUI.OnCursor( no, function()

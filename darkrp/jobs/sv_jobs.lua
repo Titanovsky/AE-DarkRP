@@ -1,5 +1,5 @@
 local C, SQL = Ambi.General.Global.Colors, Ambi.SQL
-local DB = SQL.CreateTable( 'darkrp_alt_permajobs', 'SteamID, Class' )
+local DB = SQL.CreateTable( 'darkrp2_permajobs', 'SteamID, Class' )
 local PLAYER = FindMetaTable( 'Player' )
 
 function PLAYER:SetJob( sClass, bForce, bRespawn )
@@ -9,8 +9,8 @@ function PLAYER:SetJob( sClass, bForce, bRespawn )
     if not job or not job.index then return end
 
     if not bForce then 
-        if Ambi.DarkRP.Config.jobs_compatibility and ( hook.Call( 'playerCanChangeTeam', nil, self, job.id, bForce ) == false ) then return end -- 
-        if ( hook.Call( '[Ambi.DarkRP.CanChangeJob]', nil, self, sClass, bForce ) == false ) then return end
+        if ( hook.Call( '[Ambi.DarkRP.CanChangeJob]', nil, self, sClass, bForce, job ) == false ) then return end --todo old, should remove
+        if ( hook.Call( '[Ambi.DarkRP.CanSetJob]', nil, self, sClass, bForce, job ) == false ) then return end -- new
         if timer.Exists( 'AmbiDarkRPJobDelay:'..self:SteamID() ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Подождите: ', C.ERROR, tostring( math.Round( timer.TimeLeft( 'AmbiDarkRPJobDelay:'..self:SteamID() ) ) ) , C.ABS_WHITE, ' секунд' )  return false end
         if self:GetBlockJob( sClass ) then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Работа ', C.ERROR, job.name, C.ABS_WHITE, ' заблокирована для Вас!' )  return false end
 
@@ -27,6 +27,9 @@ function PLAYER:SetJob( sClass, bForce, bRespawn )
                 end
             end
         end
+
+        if job.vip and not Ambi.DarkRP.Config.jobs_vip_ranks[ self:GetUserRank() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваш ранг не подходит под VIP!' ) return false end
+        if job.premium and not Ambi.DarkRP.Config.jobs_premium_ranks[ self:GetUserRank() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваш ранг не подходит под Premium!' ) return false end
 
         if job.admin then
             if ( job.admin == 1 ) and not self:IsAdmin() then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Доступно только для админских ранов!' ) return false
@@ -151,8 +154,10 @@ function PLAYER:SetJob( sClass, bForce, bRespawn )
         end
     end
 
+    local old_class = self:GetJob()
+
     self:SetTeam( job.index )
-    self:ChatSend( C.AMBI, '•  ', C.ABS_WHITE, 'Ваша профессия: ', job.color, job.name )
+    -- self:ChatSend( C.AMBI, '•  ', C.ABS_WHITE, 'Ваша профессия: ', job.color, job.name ) -- debug
 
     local delay = Ambi.DarkRP.Config.jobs_delay
     timer.Create( 'AmbiDarkRPJobDelay:'..self:SteamID(), delay, 1, function() end )
@@ -165,29 +170,18 @@ function PLAYER:SetJob( sClass, bForce, bRespawn )
         self:SetJobFeatures()
     end
 
-    if Ambi.DarkRP.Config.jobs_permanent_with_set_job and not Ambi.DarkRP.Config.jobs_permanent_exceptions[ sClass ] then
+    if Ambi.DarkRP.Config.jobs_permanent_enable and Ambi.DarkRP.Config.jobs_permanent_with_set_job and not Ambi.DarkRP.Config.jobs_permanent_exceptions[ sClass ] then
         local sid = self:SteamID()
         if not SQL.Select( DB, 'SteamID', 'SteamID', sid ) then SQL.Insert( DB, 'SteamID, Class', '%s, %s', sid, sClass ) return end
 
         SQL.Update( DB, 'Class', sClass, 'SteamID', sid )
+
+        hook.Call( '[Ambi.DarkRP.SetPermaJob]', nil, self, sClass, bForce, old_class, job )
     end
+
+    hook.Call( '[Ambi.DarkRP.SetJob]', nil, self, sClass, bForce, old_class, job )
 
     return true
-end
-
-function PLAYER:SetPermaJob( sClass, bForce )
-    if not Ambi.DarkRP.Config.jobs_permanent_enable then return end
-    if Ambi.DarkRP.Config.jobs_permanent_exceptions[ sClass ] then return end
-
-    self:SetJob( sClass, bForce )
-
-    if ( self:GetJob() == sClass ) then
-        local sid = self:SteamID()
-        if not SQL.Select( DB, 'SteamID', 'SteamID', sid ) then SQL.Insert( DB, 'SteamID, Class', '%s, %s', sid, sClass ) return end
-
-        SQL.Update( DB, 'Class', sClass, 'SteamID', sid )
-        self:ChatSend( C.AMBI, '•  ', C.ABS_WHITE, 'Работа сохранена!' )
-    end
 end
 
 Ambi.DarkRP.players_block_jobs = Ambi.DarkRP.players_block_jobs or {}
@@ -197,11 +191,14 @@ function PLAYER:BlockJob( sClass, nTime )
     
     local job = Ambi.DarkRP.GetJob( sClass )
     if not job or not job.index then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanBlockJob]', nil, self, sClass, nTime, job ) == false ) then return end
 
     local sid = self:SteamID()
     if not Ambi.DarkRP.players_block_jobs[ sid ] then Ambi.DarkRP.players_block_jobs[ sid ] = {} end
 
     Ambi.DarkRP.players_block_jobs[ sid ][ sClass ] = true
+
+    hook.Call( '[Ambi.DarkRP.BlockedJob]', nil, self, sClass, nTime, job )
 
     if nTime and ( nTime > 0 ) then
         timer.Simple( nTime, function()
@@ -209,6 +206,8 @@ function PLAYER:BlockJob( sClass, nTime )
                 self:UnBlockJob( sClass ) 
             else
                 Ambi.DarkRP.players_block_jobs[ sid ][ sClass ] = nil
+
+                hook.Call( '[Ambi.DarkRP.UnBlockedJobForOfflinePlayer]', nil, sid, sClass, nTime )
             end
         end )
     end
@@ -219,9 +218,12 @@ function PLAYER:UnBlockJob( sClass )
     
     local job = Ambi.DarkRP.GetJob( sClass )
     if not job or not job.index then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanUnBlockJob]', nil, self, sClass, nTime, job ) == false ) then return end
 
     local sid = self:SteamID()
     if Ambi.DarkRP.players_block_jobs[ sid ] and Ambi.DarkRP.players_block_jobs[ sid ][ sClass ] then Ambi.DarkRP.players_block_jobs[ sid ][ sClass ] = nil end
+
+    hook.Call( '[Ambi.DarkRP.UnBlockedJob]', nil, self, sClass, job )
 end
     
 function PLAYER:GetBlockJob( sClass )
@@ -236,11 +238,29 @@ function PLAYER:GetBlockJob( sClass )
     return false
 end
 
+function PLAYER:SetJobHands()
+    -- thanks to Enhanced Player Selector
+    local model_name = player_manager.TranslateToPlayerModelName( self:GetModel() ) -- string name of model
+    local hands_info = player_manager.TranslatePlayerHands( model_name ) -- table: model, skin, body
+    local hands = self:GetHands() -- entity
+
+    if ( hook.Call( '[Ambi.DarkRP.CanSetJobHands]', nil, self, model_name, hands_info, hands ) == false ) then return end
+
+    if IsValid( hands ) and hands_info and istable( hands_info ) then
+        hands:SetModel( hands_info.model )
+        hands:SetSkin( hands_info.skin )
+        hands:SetBodyGroups( hands_info.body )
+
+        hook.Call( '[Ambi.DarkRP.SetJobHands]', nil, self, model_name, hands_info, hands )
+    end
+end
+
 function PLAYER:SetJobFeatures()
     if not IsValid( self ) then return end
 
     local job = Ambi.DarkRP.GetJob( self:GetJob() )
     if not job then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanSetJobFeatures]', nil, self, job ) == false ) then return end
 
     if Ambi.DarkRP.Config.jobs_set_color then 
         if job.color_model then
@@ -249,6 +269,7 @@ function PLAYER:SetJobFeatures()
             local color = job.color
             local vector_from_color = Vector( color.r / 255, color.g / 255, color.b / 255 )
             self:SetPlayerColor( vector_from_color ) 
+            self:SetColor( C.ABS_WHITE )
         end
     end
 
@@ -262,9 +283,7 @@ function PLAYER:SetJobFeatures()
 
     if job.material then self:SetMaterial( job.material ) end
 
-    if job.model_scale then
-        self:SetModelScale( job.model_scale )
-    end
+    if job.model_scale then self:SetModelScale( job.model_scale ) end
 
     if job.bodygroups then
         for id, value in pairs( job.bodygroups ) do
@@ -281,8 +300,8 @@ function PLAYER:SetJobFeatures()
 
     if job.walkspeed then self:SetWalkSpeed( job.walkspeed ) end
     if job.runspeed then self:SetRunSpeed( job.runspeed ) end
-    if job.maxspeed then self:SetMaxSpeed( job.maxspeed ) end
-    if job.duckspeed then self:SetDuckSpeed( job.duckspeed ) end
+    if job.maxspeed then self:SetMaxSpeed( job.maxspeed ) end 
+    if job.duckspeed then self:SetDuckSpeed( job.duckspeed ) end 
     if job.unduckspeed then self:SetUnDuckSpeed( job.unduckspeed ) end
     if job.crouchedspeed then self:SetCrouchedWalkSpeed( job.crouchedspeed ) end
     if job.ladderclimbspeed then self:SetLadderClimbSpeed( job.ladderclimbspeed ) end
@@ -291,7 +310,7 @@ function PLAYER:SetJobFeatures()
 
     if job.license then self:GiveRealLicenseGun() end
     if job.fake_license then self:GiveFakeLicenseGun() end
-    if job.god then self:GodEnable() end
+    if job.god then self:GodEnable() else self:GodDisable() end
 
     if job.ammo then
         for ammo, count in pairs( job.ammo ) do self:GiveAmmo( count, ammo, true ) end
@@ -300,7 +319,10 @@ function PLAYER:SetJobFeatures()
     if job.delay then timer.Create( 'AmbiDarkRPJobDelay:'..self:SteamID(), job.delay, 1, function() end ) end
     if job.block then self:BlockJob( self:GetJob(), job.block ) end
 
+    self:SetJobHands()
     self:GiveWeaponsJob()
+
+    hook.Call( '[Ambi.DarkRP.SetJobFeatures]', nil, self, job )
 end
 
 function PLAYER:GiveWeaponsJob()
@@ -309,6 +331,7 @@ function PLAYER:GiveWeaponsJob()
 
     local weps = job.weapons
     if not weps then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanGiveWeaponsJob]', nil, self, weps, job ) == false ) then return end
 
     self:StripWeapons()
 
@@ -317,32 +340,27 @@ function PLAYER:GiveWeaponsJob()
         self:GetWeapon( class ).cannot_drop = true
     end
 
-    if Ambi.DarkRP.Config.player_base_enable then
-        for _, class in ipairs( Ambi.DarkRP.Config.player_base_weapons ) do 
-            self:Give( class ) 
-            self:GetWeapon( class ).cannot_drop = true
-        end
-    end
-
-    hook.Call( '[Ambi.DarkRP.PlayerLoadout]', nil, self, weps )
+    hook.Call( '[Ambi.DarkRP.PlayerLoadout]', nil, self, weps ) -- old
+    hook.Call( '[Ambi.DarkRP.GaveWeaponsJob]', nil, self, weps, job ) -- new
 end
 
-function PLAYER:DemoteJob( bForce, ePly )
+function PLAYER:DemoteJob( bForce, eCaller )
     if not bForce then
-        if not self:CanDemoteJob( ePly ) then return false end
+        if not self:CanDemoteJob( eCaller ) then return false end
 
         return false
     end
 
     self:SetJob( Ambi.DarkRP.Config.jobs_class, true, false )
 
-    hook.Call( '[Ambi.DarkRP.PlayerDemoted]', nil, ePly, self, bForce )
+    hook.Call( '[Ambi.DarkRP.PlayerDemoted]', nil, eCaller, self, bForce ) -- old
+    hook.Call( '[Ambi.DarkRP.DemotedJob]', nil, eCaller, self, bForce ) -- new
 
     return true
 end
 
--- ================= Compatibility ==================================================================== --
-function PLAYER:teamChange( anyID, bForce )
+-- ---------------------------------------------------------------------------------------------------------------------------------------
+function PLAYER:teamChange( anyID, bForce ) --* for compatiblity
     if not Ambi.DarkRP.Config.jobs_compatibility then return end
     if not anyID then return end
 
@@ -355,7 +373,7 @@ function PLAYER:teamChange( anyID, bForce )
     end
 end
 
--- ================= Nets ============================================================================ --
+-- ---------------------------------------------------------------------------------------------------------------------------------------
 net.AddString( 'ambi_darkrp_demote_player' )
 net.Receive( 'ambi_darkrp_demote_player', function( _, ePly )
     if not ePly:GetDelay( 'AmbiDarkRPDemote' ) then ePly:SetDelay( 'AmbiDarkRPDemote', Ambi.DarkRP.Config.jobs_demote_delay ) else ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Подождите: ', C.ERROR, tostring( math.floor( timer.TimeLeft( 'AmbiDarkRPDemote['..ePly:SteamID()..']' ) ) ), C.ABS_WHITE, ' секунд' ) return end
@@ -366,7 +384,7 @@ net.Receive( 'ambi_darkrp_demote_player', function( _, ePly )
     local demoter = net.ReadEntity()
     if not IsValid( demoter ) or not demoter:IsPlayer() then ePly:Kick( '[DarkRP] Попытка уволить НЕ игрока!' ) return end
     if not Ambi.DarkRP.Config.jobs_demote_can_similar_job and ( ePly:Job() == demoter:Job() ) then ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Нельзя уволить игрока с такой же работой, как у Вас!' ) return end
-    if not demoter:CanDemoteJob( ePly, '' ) then ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Данного игрока нельзя уволить!' ) return end
+    if not ePly:CanDemoteJob( demoter, '' ) then ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Данного игрока нельзя уволить!' ) return end
 
     Ambi.DarkRP.StartVote( ePly:Nick()..' желает уволить '..demoter:Nick(), function() 
         if IsValid( demoter ) and IsValid( ePly ) then  
@@ -377,5 +395,5 @@ net.Receive( 'ambi_darkrp_demote_player', function( _, ePly )
         end
     end, function() 
         if IsValid( ePly ) then ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Голосование на увольнения провалилось!' ) end
-    end )
+    end, ePly )
 end )

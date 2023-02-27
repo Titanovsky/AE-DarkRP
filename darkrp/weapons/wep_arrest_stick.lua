@@ -92,8 +92,10 @@ function SWEP:PrimaryAttack()
 
         Ambi.DarkRP.Arrest( ply, owner, '', Ambi.DarkRP.Config.police_system_arrest_time )
 
-        owner:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Вы арестовали ', C.AMBI_BLUE, ply:Nick() )
-        ply:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Вас арестовал ', C.AMBI_BLUE, owner:Nick() )
+        if ply:IsArrested() then
+            owner:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Вы арестовали ', C.AMBI_BLUE, ply:Nick() )
+            ply:ChatSend( C.AMBI_BLUE, '•  ', C.ABS_WHITE, 'Вас арестовал ', C.AMBI_BLUE, owner:Nick() )
+        end
     end
 end
 

@@ -1,5 +1,5 @@
 local C, SQL, Gen = Ambi.General.Global.Colors, Ambi.SQL, Ambi.General
-local DB = SQL.CreateTable( 'darkrp_alt_money', 'SteamID, Money' )
+local DB = SQL.CreateTable( 'darkrp2_money', 'SteamID, Money' )
 local PLAYER = FindMetaTable( 'Player' )
 local MAX_MONEY = 999999999999
 local MIN_MONEY = 0
@@ -20,7 +20,8 @@ function PLAYER:SetMoney( nMoney )
     local old_money = self.nw_Money
 
     self.nw_Money = nMoney
-    SQL.Update( DB, 'Money', nMoney, 'SteamID', self:SteamID() )
+
+    if not self:IsBot() then SQL.Update( DB, 'Money', nMoney, 'SteamID', self:SteamID() ) end
 
     hook.Call( '[Ambi.DarkRP.SetMoney]', nil, self, nMoney, old_money )
 end
@@ -84,7 +85,7 @@ function PLAYER:TransferMoney( nMoney ) -- в командах он обычно
         receiver_player:ChatSend( C.AMBI, '•  ', C.ABS_WHITE, 'Вы получили ', C.AMBI_GREEN, nMoney..Ambi.DarkRP.Config.money_currency_symbol, C.ABS_WHITE, ' от игрока ', C.AMBI_BLUE, self:Nick() )
     end
 
-    hook.Call( '[Ambi.DarkRP.TransferedMoney]', nil, self, nMoney, receiver_player, nMoney )
+    hook.Call( '[Ambi.DarkRP.TransferedMoney]', nil, self, receiver_player, nMoney )
 
     return true
 end
@@ -95,17 +96,24 @@ hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.InitialMoneyBalance', function( ePl
         if IsValid( ePly ) then
             if ePly:IsBot() then ePly.nw_Money = 0 return end
 
+            local is_first = false
             local sid = ePly:SteamID()
             local balance = SQL.Select( DB, 'Money', 'SteamID', sid ) 
             if not balance then 
                 balance = Ambi.DarkRP.Config.money_start
 
                 SQL.Insert( DB, 'SteamID, Money', '%s, %i', sid, balance ) 
+
+                is_first = true
+
+                hook.Call( '[Ambi.DarkRP.PlayerMoneyTableCreated]', nil, ePly, balance )
             else
                 balance = tonumber( balance )
             end
 
             ePly.nw_Money = balance
+
+            hook.Call( '[Ambi.DarkRP.PlayerMoneyTableInit]', nil, ePly, balance, is_first )
         end
     end )
 end )

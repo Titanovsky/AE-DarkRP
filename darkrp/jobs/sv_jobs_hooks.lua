@@ -1,11 +1,14 @@
 local C, SQL = Ambi.General.Global.Colors, Ambi.SQL
-local DB = SQL.CreateTable( 'darkrp_alt_permajobs', 'SteamID, Class' )
--- --------------------------------------------------------------------------------------------------------
+local DB = SQL.CreateTable( 'darkrp2_permajobs', 'SteamID, Class' )
 
--- ================= Hooks ============================================================================ --
-hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SetDefaultJob', function( ePly )
+-- ---------------------------------------------------------------------------------------------------------------------------------------
+hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SetFirstJob', function( ePly )
+    local class = Ambi.DarkRP.Config.jobs_class
+    if not Ambi.DarkRP.GetJob( class ) then ePly:Kick( '[DarkRP] Не создана дефолтная профессия: '..class ) return end
+
     timer.Simple( 0.02, function()
         if not IsValid( ePly ) then return end
+        if ePly:IsBot() then ePly:SetJob( Ambi.DarkRP.Config.jobs_class ) return end
 
         if Ambi.DarkRP.Config.jobs_permanent_enable then 
             local class = SQL.Select( DB, 'Class', 'SteamID', ePly:SteamID() )
@@ -14,15 +17,22 @@ hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SetDefaultJob', function( ePly )
         else
             ePly:SetJob( Ambi.DarkRP.Config.jobs_class )
         end
+
+        hook.Call( '[Ambi.DarkRP.SetFirstJob]', nil, ePly )
+
+        timer.Simple( 1, function()
+            if not IsValid( ePly ) then return end
+
+            if ePly:GetJobTable().is_fake then ePly:SetJob( Ambi.DarkRP.Config.jobs_class ) end
+        end )
     end )
 end )
 
 hook.Add( 'PlayerSpawn', 'Ambi.DarkRP.SetJobStats', function( ePly )
-    timer.Simple( 0, function()
+    timer.Simple( 0.03, function()
         if not IsValid( ePly ) then return end
 
         ePly:SetJobFeatures()
-        ePly:SetupHands()
 
         if ePly:IsArrested() then return end
 
@@ -36,7 +46,7 @@ hook.Add( 'PlayerSpawn', 'Ambi.DarkRP.SetJobStats', function( ePly )
                 if spawn.ang then ePly:SetEyeAngles( spawn.ang ) end
             end
 
-            -- timer.Simple( 0.1, function() 
+            -- timer.Simple( 0.1, function() --! probably bug with spawn
             --     if ePly:GetPos() != spawn.pos then ePly:SetPos( spawn.pos ) end
             -- end )
         end
@@ -80,25 +90,39 @@ hook.Add( 'PlayerSay', 'Ambi.DarkRP.SetJob', function( ePly, sText )
 
     local job = Ambi.DarkRP.GetJob( class )
     if not job then return end
-    if ( job.can_join_command == false ) then ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Нельзя вступить в эту работу через команду!' ) return end
+
+    if ( job.can_join_command == false ) then ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Нельзя вступить в эту работу через команду!' ) return '' end
+    if ( hook.Call( '[Ambi.DarkRP.CanChangeJobByCommand]', nil, ePly, class, job ) == false ) then return end
 
     ePly:SetJob( class )
+
+    hook.Call( '[Ambi.DarkRP.ChangedJobByCommand]', nil, ePly, class, job )
+
+    if Ambi.DarkRP.Config.jobs_change_on_chat_command_hide then return '' end
 end )
 
-hook.Add( 'PlayerSpawn', 'Ambi.DarkRP.SetJobWeapons', function( ePly )
+hook.Add( 'GetFallDamage', 'Ambi.DarkRP.JobFallDamage', function( ePly, nSpeed )
+    local fall_damage = ePly:GetJobTable().fall_damage
+    if fall_damage then return fall_damage end
+end )
+
+hook.Add( 'PlayerSpawn', 'Ambi.DarkRP.GiveJobWeapons', function( ePly )
     timer.Simple( 0.1, function()
         if not IsValid( ePly ) or not ePly:Alive() then return end
 
         local weapons = ePly:GetJob()[ 'weapons' ]
         if not weapons or ( #weapons == 0 ) then return end
+        if ( hook.Call( '[Ambi.DarkRP.CanGiveJobWeapons]', nil, ePly, weapons ) == false ) then return end
 
         for _, class in ipairs( weapons ) do
             ePly:Give( class )
         end
+
+        hook.Call( '[Ambi.DarkRP.GaveJobWeapons]', nil, ePly, weapons )
     end )
 end )
 
--- ================= Properties ======================================================================= --
+-- ---------------------------------------------------------------------------------------------------------------------------------------
 hook.Add( 'EntityTakeDamage', 'Ambi.DarkRP.JobDamage', function( eObj, dmgInfo )
     local attacker = dmgInfo:GetAttacker()
     if not IsValid( attacker ) or not attacker:IsPlayer() then return end
@@ -115,6 +139,7 @@ hook.Add( 'EntityTakeDamage', 'Ambi.DarkRP.JobDamage', function( eObj, dmgInfo )
     if not eObj:IsPlayer() then return end
     
     local job = eObj:GetJobTable()
+    if not job then return end
 
     local damage = job.take_damage
     if damage then dmgInfo:SetDamage( damage ) end
@@ -200,7 +225,7 @@ hook.Add( '[Ambi.DarkRP.CanSellShopItem]', 'Ambi.DarkRP.PropertyForJobs', functi
     if ( job.can_sell_shop_item == false ) then ePly:ChatSend( C.ERROR, '• ', C.ABS_WHITE, 'Ваша работа не позволяет продавать предметы!' ) return false end
 end )
 
--- ================= Hooks Custom Fiels ==================================================================== --
+-- ---------------------------------------------------------------------------------------------------------------------------------------
 -- Old (DarkRP)
 hook.Add( 'PlayerSpawn', 'Ambi.DarkRP.JobCustomField', function( ePly )
     timer.Simple( 0, function()

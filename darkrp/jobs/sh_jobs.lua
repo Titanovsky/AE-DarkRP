@@ -1,20 +1,40 @@
-local Gen = Ambi.General
-local PLAYER, C = FindMetaTable( 'Player' ), Ambi.General.Global.Colors
-
 Ambi.DarkRP.jobs = Ambi.DarkRP.jobs or {}
 Ambi.DarkRP.jobs_commands = Ambi.DarkRP.jobs_commands or {}
 
--- ================= Player =========================================================================== --
+local Gen, C = Ambi.Packages.Out( 'general, colors' )
+local PLAYER = FindMetaTable( 'Player' )
+
+local DEFAULT_JOB = {
+    class = 'default',
+    command = '',
+    name = '...',
+    category = 'Other',
+    description = 'Not a job!',
+    max = 0,
+    salary = 0,
+    vote = 0,
+    admin = 0,
+    color = Color( 0, 0, 0 ),
+    weapons = {},
+    models = 'models/player/kleiner.mdl',
+    license = false,
+    demote = false,
+    order = 0,
+    index = 1001,
+    is_fake = true
+}
+
+-- ---------------------------------------------------------------------------------------------------------------------------------------
 function PLAYER:GetJob()
     for class, job in pairs( Ambi.DarkRP.GetJobs() ) do
         if ( job.index == self:Team() ) then return class end
     end
 
-    return ''
+    return '' -- for correct key of table
 end
 
 function PLAYER:GetJobTable()
-    return Ambi.DarkRP.GetJob( self:Job() )
+    return Ambi.DarkRP.GetJob( self:Job() ) or DEFAULT_JOB
 end
 
 function PLAYER:Job()
@@ -37,25 +57,34 @@ function PLAYER:GetJobName()
     return self.nw_JobName or team.GetName( self:Team() )
 end
 
+function PLAYER:GetJobColor()
+    return self:GetJobTable().color
+end
+
 function PLAYER:JobName()
     return self.nw_JobName or team.GetName( self:Team() )
+end
+
+function PLAYER:JobColor()
+    return self:GetJobColor()
 end
 
 function PLAYER:TeamName()
     return self.nw_JobName or team.GetName( self:Team() )
 end
 
-function PLAYER:CanDemoteJob( ePly, sReason )
+function PLAYER:CanDemoteJob( eCaller, sReason )
     local job = self:GetJobTable()
     if not job then return false end
     if ( job.demote == false ) then return false end
     if ( self:GetJob() == Ambi.DarkRP.Config.jobs_class ) then return false end
-    if ( hook.Call( '[Ambi.DarkRP.CanDemote]', nil, ePly, self, sReason ) == false ) then return false end
+    if ( hook.Call( '[Ambi.DarkRP.CanDemote]', nil, eCaller, self, sReason ) == false ) then return false end -- old
+    if ( hook.Call( '[Ambi.DarkRP.CanDemoteJob]', nil, eCaller, self, sReason ) == false ) then return false end -- new
 
     return true
 end
 
--- ================= Core ============================================================================= --
+-- ---------------------------------------------------------------------------------------------------------------------------------------
 local function FillEmptyProperties( tJob )
     local default = Ambi.DarkRP.Config.jobs_default
 
@@ -73,6 +102,8 @@ local function FillEmptyProperties( tJob )
     tJob.license        = ( tJob.license or tJob.hasLicense ) or default.license
     tJob.demote         = tJob.demote or default.demote
     tJob.order          = ( tJob.order or tJob.sortOrder ) or default.order
+
+    hook.Call( '[Ambi.DarkRP.PostFillEmptyPropertiesJobs]', nil, tJob )
 
     return tJob 
 end
@@ -94,6 +125,8 @@ local function CheckProperties( tJob )
     elseif not tJob.weapons then Gen.Error( 'DarkRP', 'Job weapons is not selected!' ) return false
     elseif not tJob.models then Gen.Error( 'DarkRP', 'Job models is not selected!' ) return false
     end
+
+    if ( hook.Call( '[Ambi.DarkRP.CheckPropertiesJobs]', nil, tJob ) == false ) then return false end
 
     if tJob.model then 
         Gen.Warning( 'DarkRP', 'Ambi DarkRP don\'t support name "model", only: "models"' ) 
@@ -198,6 +231,8 @@ local compatibility_keys = {
     [ 'OnPlayerChangedTeam' ] = 'PlayerChangedTeam',
 }
 local function SetCompatibilityWithDarkRPOld( tJob )
+    if ( hook.Call( '[Ambi.DarkRP.CanSetCompatibilityWithDarkRPOldJobs]', nil, tJob ) == false ) then return end
+
     setmetatable( tJob, {
         __index = function( self, anyKey )
             local comp_key = compatibility_keys[ anyKey ]
@@ -206,13 +241,16 @@ local function SetCompatibilityWithDarkRPOld( tJob )
     } )
 end
 
+-- ---------------------------------------------------------------------------------------------------------------------------------------
 function Ambi.DarkRP.AddJob( sClass, tJob )
-    if not sClass or not tJob then Gen.Error( 'DarkRP', 'AddJob | Not selected sClass or tJob!' ) return end
+    if not sClass or not tJob then Gen.Error( 'DarkRP', 'AddJob | Didn\'t select sClass or tJob!' ) return end
     if ( hook.Call( '[Ambi.DarkRP.CanAddJob]', nil, sClass, tJob ) == false ) then return end
     
     local job = FillEmptyProperties( tJob )
     if not CheckProperties( job ) then Gen.Error( 'DarkRP', 'AddJob | CheckProperties the job == false' ) return end
     SetCompatibilityWithDarkRPOld( tJob )
+
+    local word = Ambi.DarkRP.GetJob( sClass ) and 'Updated' or 'Created'
 
     local count = 0
     for _, v in pairs( team.GetAllTeams() ) do count = count + 1 end
@@ -243,16 +281,17 @@ function Ambi.DarkRP.AddJob( sClass, tJob )
 
     _G[ sClass ] = index
     
-    print( '[DarkRP] Created job: '..sClass..' ['..index..']' )
+    print( '[DarkRP] '..word..' job: '..sClass..' ['..index..']' )
 
-    hook.Call( '[Ambi.DarkRP.AddedJob]', nil, sClass, tJob )
+    hook.Call( '[Ambi.DarkRP.AddedJob]', nil, sClass, job )
 
     return index
 end
 
 function Ambi.DarkRP.RemoveJob( sClass )
     local job = Ambi.DarkRP.GetJob( sClass )
-    if not job then return end
+    if not job then Gen.Error( 'DarkRP', 'RemoveJob | Didn\'t select sClass' ) return end
+    if ( hook.Call( '[Ambi.DarkRP.CanRemoveJob]', nil, sClass, job ) == false ) then return end
 
     local index = job.index
 
@@ -268,7 +307,7 @@ function Ambi.DarkRP.RemoveJob( sClass )
 end
 
 function Ambi.DarkRP.SimpleAddJob( sClass, sName, sCommand, sCategory, sDescription, nMax, nSalary, bVote, bLicense, bDemote, cColor, tModels, tWeapons, tOther )
-    if not sClass then return end
+    if not sClass then Gen.Error( 'DarkRP', 'SimpleAddJob | Didn\'t select sClass' ) return end
     
     local tab = {
         name = sName,
@@ -292,6 +331,15 @@ function Ambi.DarkRP.SimpleAddJob( sClass, sName, sCommand, sCategory, sDescript
     end
 
     return Ambi.DarkRP.AddJob( sClass, tab )
+end
+
+function Ambi.DarkRP.AddJobTable( tJob )
+    if not tJob or not istable( tJob ) then Gen.Error( 'DarkRP', 'AddJobTable | Didn\'t select tJob or it\'s not a table' )  return end
+
+    local class = tJob.class
+    if not class then Gen.Error( 'DarkRP', 'AddJobTable | Didn\'t have class in a table' )  return end
+
+    return Ambi.DarkRP.AddJob( class, tJob )
 end
 
 function Ambi.DarkRP.GetJobs()
@@ -330,213 +378,3 @@ function Ambi.DarkRP.GetJobPlayersCount( sClass )
 
     return count
 end
-
--- ================= Defaults ========================================================================= --
-if not Ambi.DarkRP.Config.jobs_create_defaults then return end
-
-local Add = Ambi.DarkRP.AddJob
-
-local MODELS_CITIZEN = {
-    'models/player/Group01/male_07.mdl',
-    'models/player/Group01/male_02.mdl',
-    'models/player/Group01/male_01.mdl', 
-    'models/player/Group01/male_03.mdl', 
-    'models/player/Group01/male_04.mdl', 
-    'models/player/Group01/male_05.mdl', 
-    'models/player/Group01/male_06.mdl', 
-    'models/player/Group01/male_08.mdl',
-    'models/player/Group01/male_09.mdl',
-
-    'models/player/Group01/female_01.mdl',
-    'models/player/Group01/female_02.mdl',
-    'models/player/Group01/female_03.mdl',
-    'models/player/Group01/female_04.mdl',
-    'models/player/Group01/female_05.mdl',
-    'models/player/Group01/female_06.mdl'
-}
-
-local MODELS_MEDICS = {
-    'models/player/Group03m/male_07.mdl',
-    'models/player/Group03m/male_02.mdl', 
-    'models/player/Group03m/male_01.mdl',
-    'models/player/Group03m/male_03.mdl', 
-    'models/player/Group03m/male_04.mdl', 
-    'models/player/Group03m/male_05.mdl', 
-    'models/player/Group03m/male_06.mdl', 
-    'models/player/Group03m/male_08.mdl', 
-    'models/player/Group03m/male_09.mdl', 
-
-    'models/player/Group03m/female_01.mdl', 
-    'models/player/Group03m/female_02.mdl', 
-    'models/player/Group03m/female_03.mdl', 
-    'models/player/Group03m/female_04.mdl', 
-    'models/player/Group03m/female_05.mdl',
-    'models/player/Group03m/female_06.mdl', 
-}
-
-local MODELS_GANGSTERS = {
-    'models/player/Group03/male_07.mdl',
-    'models/player/Group03/male_02.mdl',
-    'models/player/Group03/male_01.mdl', 
-    'models/player/Group03/male_03.mdl', 
-    'models/player/Group03/male_04.mdl', 
-    'models/player/Group03/male_05.mdl', 
-    'models/player/Group03/male_06.mdl', 
-    'models/player/Group03/male_08.mdl',
-    'models/player/Group03/male_09.mdl',
-
-    'models/player/Group03/female_01.mdl',
-    'models/player/Group03/female_02.mdl',
-    'models/player/Group03/female_03.mdl',
-    'models/player/Group03/female_04.mdl',
-    'models/player/Group03/female_05.mdl',
-    'models/player/Group03/female_06.mdl'
-}
-
-local MODELS_SWAT = {
-    'models/player/swat.mdl',
-    'models/player/urban.mdl',
-    'models/player/gasmask.mdl',
-    'models/player/riot.mdl',
-}
-
-local WEAPONS_POLICE = {
-    'arrest_stick',
-    'unarrest_stick',
-    'stunstick',
-    'weapon_pistol',
-}
-
-local WEAPONS_SWAT = {
-    'arrest_stick',
-    'unarrest_stick',
-    'stunstick',
-    'door_ram',
-    'weapon_pistol',
-    'weapon_smg1',
-}
-
-local WEAPONS_SHERIFF = {
-    'arrest_stick',
-    'unarrest_stick',
-    'stunstick',
-    'door_ram',
-    'weapon_357',
-    'weapon_smg1',
-    'weapon_shotgun',
-}
-
-local WEAPONS_MAYOR = {
-    'unarrest_stick',
-    'stunstick',
-}
-
-local WEAPONS_MEDIC = {
-    'med_kit'
-}
-
-Add( 'TEAM_CITIZEN', { 
-    name = 'Житель', 
-    command = 'citizen', 
-    models = MODELS_CITIZEN,
-    max = 0,
-    category = 'Жители', 
-    color = C.AMBI_GREEN,
-} )
-
-Add( 'TEAM_MEDIC', { 
-    name = 'Врач', 
-    command = 'medic', 
-    max = 4,
-    category = 'Жители', 
-    models = MODELS_MEDICS,
-    weapons = WEAPONS_MEDIC,
-    demote = true,
-    color = C.RU_PINK,
-} )
-
-Add( 'TEAM_POLICE', { 
-    name = 'Полицейский', 
-    command = 'police', 
-    category = 'Полиция', 
-    description = 'Сотрудник правопорядка', 
-    color = C.AMBI_BLUE, 
-    police = true,
-    weapons = WEAPONS_POLICE, 
-    demote = true,
-    vote = true,
-    models = { 'models/player/police.mdl', 'models/player/police_fem.mdl' } 
-} )
-
-Add( 'TEAM_SWAT', { 
-    name = 'Спецназ', 
-    command = 'swat', 
-    category = 'Полиция', 
-    description = 'Отряд Специального Назначения, подчиняется Шерифу', 
-    from = 'TEAM_POLICE',
-    color = C.AMBI_BLUE, 
-    police = true,
-    weapons = WEAPONS_SWAT, 
-    demote = true,
-    models = MODELS_SWAT,
-} )
-
-Add( 'TEAM_SHERIFF', { 
-    name = 'Шериф', 
-    command = 'sheriff', 
-    category = 'Полиция', 
-    description = 'Шериф города. Полностью руководит Полицейским Участком', 
-    color = C.AMBI_HARD_BLUE, 
-    police = true,
-    weapons = WEAPONS_SHERIFF, 
-    max = 1,
-    vote = true,
-    demote = true,
-    models = { 'models/player/barney.mdl' },
-} )
-
-Add( 'TEAM_GUNDEALER', { 
-    name = 'Продавец Оружия', 
-    command = 'gundealer', 
-    category = 'Жители', 
-    description = 'Житель города, но имеющий право продавать оружие', 
-    color = C.AMBI_CARROT, 
-    max = 4,
-    demote = true,
-    models = { 'models/player/monk.mdl' },
-} )
-
-Add( 'TEAM_BUSINESSMAN', { 
-    name = 'Предприниматель', 
-    command = 'businessman', 
-    category = 'Жители', 
-    description = 'Житель города, способный покупать больше дверей', 
-    color = C.AMBI_SALAT, 
-    max = 4,
-    doors_max = 10,
-    models = { 'models/player/magnusson.mdl' },
-} )
-
-Add( 'TEAM_GANGSTER', { 
-    name = 'Бандит', 
-    command = 'gangster', 
-    category = 'Криминал', 
-    description = 'Самый низкоранговый бандит. Нарушает закон в одиночку, либо с группой', 
-    color = C.FLAT_GRAY, 
-    weapons = { 'lockpick' },
-    models = MODELS_GANGSTERS,
-} )
-
-Add( 'TEAM_MAYOR', { 
-    name = 'Мэр', 
-    command = 'mayor', 
-    category = 'Мэрия', 
-    description = 'Администратор города: управляет полицией', 
-    color = C.FLAT_DARK_RED, 
-    max = 1, 
-    demote_after_death = true, 
-    mayor = true,
-    weapons = WEAPONS_MAYOR,
-    vote = true,
-    models = { 'models/player/breen.mdl', 'models/player/mossman_arctic.mdl' },
-} )

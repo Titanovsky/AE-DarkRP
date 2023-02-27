@@ -1,4 +1,4 @@
-local C, GUI, Draw = Ambi.Packages.Out( '@d' )
+local C, GUI, Draw, UI = Ambi.Packages.Out( '@d' )
 local CacheURL = Ambi.Cache.CacheURL
 local W, H = ScrW(), ScrH()
 local COLOR_LINE, COLOR_BLUE = ColorAlpha( C.ABS_BLACK, 150 ), Color( 0, 145, 255 )
@@ -31,7 +31,7 @@ function Ambi.DarkRP.OpenF4Menu()
         Draw.Box( w - 2, h, 0, 0, self.color, 8, 'top-left' )
         Draw.Box( 2, h, w - 2, 0, COLOR_LINE, 8 )
 
-        Draw.SimpleText( w / 2, h / 2, self.text, '32 Oswald Light', C.ABS_WHITE, 'center', 1, C.ABS_BLACK )
+        Draw.SimpleText( w / 2, h / 2, self.text, UI.SafeFont( '32 Oswald Light' ), C.ABS_WHITE, 'center', 1, C.ABS_BLACK )
     end )
     top_header_ambi_market.color = C.AMBI_BLACK
     top_header_ambi_market.text = ''
@@ -48,7 +48,7 @@ function Ambi.DarkRP.OpenF4Menu()
 
         gui.OpenURL( 'https://vk.com/ambi_team' )
     end, function( self, w, h ) 
-        Draw.SimpleText( w / 2, 2, GetHostName(), '20 Ambi', C.ABS_WHITE, 'top-center', 1, C.ABS_BLACK )
+        Draw.SimpleText( w / 2, 2, GetHostName(), UI.SafeFont( '20 Ambi' ), C.ABS_WHITE, 'top-center', 1, C.ABS_BLACK )
     end )
     top_header_ambi:SetCursor( 'arrow' )
 
@@ -72,7 +72,7 @@ function Ambi.DarkRP.OpenF4Menu()
             save_page = i
         end, function( self, w, h ) 
             if ( i != 1 ) then Draw.Box( w, 2, 0, 0, COLOR_LINE ) end
-            Draw.SimpleText( w / 2, h / 2, self.text, '38 Ambi', self.color, 'center', 1, C.ABS_BLACK )
+            Draw.SimpleText( w / 2, h / 2, self.text, UI.SafeFont( '38 Ambi' ), self.color, 'center', 1, C.ABS_BLACK )
         end )
         page.text = ''
         page.color = C.ABS_WHITE
@@ -88,12 +88,12 @@ function Ambi.DarkRP.OpenF4Menu()
 
     local home = buttons[ 1 ]
     if Ambi.DarkRP.Config.f4menu_show_home then
-        home.text = 'Основное'
+        home.text = Ambi.DarkRP.Config.f4menu_header_home
         home.Action = function()
             local panel = GUI.DrawPanel( main, main:GetWide(), main:GetTall(), 0, 0, function( self, w, h ) 
-                Draw.SimpleText( 136, 4, LocalPlayer():Nick(), '26 Ambi', C.ABS_WHITE, 'top-left', 1, C.ABS_BLACK )
-                Draw.SimpleText( 136, 28 * 1, LocalPlayer():JobName(), '26 Ambi', LocalPlayer():TeamColor(), 'top-left', 1, C.ABS_BLACK )
-                Draw.SimpleText( 136, 28 * 2, LocalPlayer():GetMoney()..Ambi.DarkRP.Config.money_currency_symbol, '26 Nexa Script Light', C.AMBI_GREEN, 'top-left', 1, C.ABS_BLACK )
+                Draw.SimpleText( 136, 4, LocalPlayer():Nick(), UI.SafeFont( '26 Ambi' ), C.ABS_WHITE, 'top-left', 1, C.ABS_BLACK )
+                Draw.SimpleText( 136, 28 * 1, LocalPlayer():JobName(), UI.SafeFont( '26 Ambi' ), LocalPlayer():TeamColor(), 'top-left', 1, C.ABS_BLACK )
+                Draw.SimpleText( 136, 28 * 2, LocalPlayer():GetMoney()..Ambi.DarkRP.Config.money_currency_symbol, UI.SafeFont( '26 Nexa Script Light' ), C.AMBI_GREEN, 'top-left', 1, C.ABS_BLACK )
 
                 Draw.Box( w, 2, 0, 128, C.AMBI_BLACK )
                 Draw.Box( 2, 128, 128, 0, C.AMBI_BLACK )
@@ -123,7 +123,7 @@ function Ambi.DarkRP.OpenF4Menu()
 
     local jobs = buttons[ 2 ]
     if Ambi.DarkRP.Config.f4menu_show_jobs then
-        jobs.text = 'Работы'
+        jobs.text = Ambi.DarkRP.Config.f4menu_header_jobs
         jobs.Action = function()
             local panel = GUI.DrawScrollPanel( main, main:GetWide(), main:GetTall(), 0, 0, function( self, w, h )
             end )
@@ -189,7 +189,7 @@ function Ambi.DarkRP.OpenF4Menu()
                                 frame:Remove()
                             end, function( self, w, h ) 
                                 Draw.Box( w, h, 0, 0, self.col )
-                                Draw.SimpleText( 68, h / 2, name, '28 Ambi', C.ABS_WHITE, 'top-left', 1, C.ABS_BLACK )
+                                Draw.SimpleText( 68, h / 2, name, UI.SafeFont( '28 Ambi' ), C.ABS_WHITE, 'top-left', 1, C.ABS_BLACK )
                             end )
                             job_model.col = C.AMBI_WHITE
 
@@ -206,11 +206,11 @@ function Ambi.DarkRP.OpenF4Menu()
                     end
                 end, function( self, w, h ) 
                     Draw.Box( w, h, 0, 0, self.col )
-                    Draw.SimpleText( 68, 4, job.name, '28 Ambi', C.ABS_WHITE, 'top-left', 1, C.ABS_BLACK )
+                    Draw.SimpleText( 68, 4, job.name, UI.SafeFont( '28 Ambi' ), C.ABS_WHITE, 'top-left', 1, C.ABS_BLACK )
                     Draw.Box( w, 4, 0, h - 4, C.AMBI_RED )
 
                     if job.max and ( job.max >= 1 ) then 
-                        Draw.SimpleText( w - 18, h / 2, count_workers..'/'..job.max, '18 Ambi', count_workers >= job.max and C.AMBI_RED or C.ABS_BLACK, 'center-right' ) 
+                        Draw.SimpleText( w - 18, h / 2, count_workers..'/'..job.max, UI.SafeFont( '18 Ambi' ), count_workers >= job.max and C.AMBI_RED or C.ABS_BLACK, 'center-right' ) 
                     end
                 end )
                 job_panel.col = C.AMBI_WHITE
@@ -235,7 +235,7 @@ function Ambi.DarkRP.OpenF4Menu()
 
     local shop = buttons[ 3 ]
     if Ambi.DarkRP.Config.f4menu_show_shop then
-        shop.text = 'Магазин'
+        shop.text = Ambi.DarkRP.Config.f4menu_header_shop
         shop.Action = function()
             local panel = GUI.DrawScrollPanel( main, main:GetWide(), main:GetTall(), 0, 0, function( self, w, h )
             end )
@@ -270,8 +270,8 @@ function Ambi.DarkRP.OpenF4Menu()
                     LocalPlayer():ConCommand( 'say /'..Ambi.DarkRP.Config.shop_buy_command..' '..class )
                 end, function( self, w, h ) 
                     Draw.Box( w, h, 0, 0, self.col )
-                    Draw.SimpleText( 68, 4, item.name, '28 Ambi', C.ABS_WHITE, 'top-left', 1, C.ABS_BLACK )
-                    Draw.SimpleText( 68, 4 + 28, price..Ambi.DarkRP.Config.money_currency_symbol, '24 Nexa Script Light', LocalPlayer():GetMoney() >= price and C.AMBI_GREEN or C.AMBI_RED, 'top-left', 1, C.ABS_BLACK )
+                    Draw.SimpleText( 68, 4, item.name, UI.SafeFont( '28 Ambi' ), C.ABS_WHITE, 'top-left', 1, C.ABS_BLACK )
+                    Draw.SimpleText( 68, 4 + 28, price..Ambi.DarkRP.Config.money_currency_symbol, UI.SafeFont( '24 Nexa Script Light' ), LocalPlayer():GetMoney() >= price and C.AMBI_GREEN or C.AMBI_RED, 'top-left', 1, C.ABS_BLACK )
                     Draw.Box( w, 2, 0, h - 2, C.AMBI_BLACK )
                 end )
                 item_panel.col = C.AMBI_WHITE
@@ -296,11 +296,11 @@ function Ambi.DarkRP.OpenF4Menu()
 
     local settings = buttons[ 4 ]
     if Ambi.DarkRP.Config.f4menu_show_settings then
-        settings.text = 'Настройка'
+        settings.text = Ambi.DarkRP.Config.f4menu_header_settings
         settings.Action = function()
             local panel = GUI.DrawScrollPanel( main, main:GetWide(), main:GetTall(), 0, 0, function( self, w, h )
-                Draw.Text( w / 2 - 84, h / 2, 'Скачайте модуль ', '36 Ambi', C.ABS_WHITE, 'center', 1, C.ABS_BLACK ) 
-                Draw.Text( w / 2 + 104, h / 2 + 2, 'Ambi Opti', '36 Ambi', C.AMBI_BLUE, 'center', 1, C.ABS_BLACK ) 
+                Draw.Text( w / 2 - 84, h / 2, 'Скачайте модуль ', UI.SafeFont( '36 Ambi' ), C.ABS_WHITE, 'center', 1, C.ABS_BLACK ) 
+                Draw.Text( w / 2 + 104, h / 2 + 2, 'Ambi Opti', UI.SafeFont( '36 Ambi' ), C.AMBI_BLUE, 'center', 1, C.ABS_BLACK ) 
             end )
 
             local button = GUI.DrawButton( panel, panel:GetWide(), panel:GetTall(), 0, 0, nil, nil, nil, function()
@@ -318,7 +318,7 @@ function Ambi.DarkRP.OpenF4Menu()
 
     local commands = buttons[ 5 ]
     if Ambi.DarkRP.Config.f4menu_show_commands then
-        commands.text = 'Команды'
+        commands.text = Ambi.DarkRP.Config.f4menu_header_commands
         commands.Action = function()
             local panel = GUI.DrawScrollPanel( main, main:GetWide(), main:GetTall(), 0, 0, function( self, w, h ) 
             end )
@@ -332,14 +332,14 @@ function Ambi.DarkRP.OpenF4Menu()
 
                 i = i + 1
                 
-                local tw = Draw.GetTextSizeX( '22 Ambi', name ) + 24
+                local tw = Draw.GetTextSizeX( UI.SafeFont( '22 Ambi' ), name ) + 24
                 local panel = GUI.DrawButton( panel, panel:GetWide(), 34, 0, 34 * i, nil, nil, nil, function()
                     LocalPlayer():EmitSound( 'buttons/button15.wav', nil, 135, .1 )
                     
                     LocalPlayer():ConCommand( 'say '..command )
                 end, function( self, w, h ) 
                     Draw.Box( w, h, 0, 0, self.col )
-                    Draw.SimpleText( w / 2, h / 2, name, '22 Ambi', C.ABS_WHITE, 'center', 1, C.ABS_BLACK )
+                    Draw.SimpleText( w / 2, h / 2, name, UI.SafeFont( '22 Ambi' ), C.ABS_WHITE, 'center', 1, C.ABS_BLACK )
                     Draw.Box( tw, 2, w / 2 - tw / 2, h - 2, C.AMBI_BLACK )
                 end )
                 panel.col = C.AMBI_WHITE

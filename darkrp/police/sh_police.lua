@@ -1,7 +1,7 @@
 local C = Ambi.General.Global.Colors
 local PLAYER = FindMetaTable( 'Player' )
---------------------------------------------------------------------------------------------------------
 
+-- ---------------------------------------------------------------------------------------------------------------------------------
 function PLAYER:IsArrested()
     return self.nw_IsArrested
 end
@@ -22,7 +22,7 @@ function PLAYER:IsCP()
     return self:IsPolice()
 end
 
---------------------------------------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------------------------------------------------------------
 if not Ambi.ChatCommands then Ambi.General.Error( 'DarkRP', 'Before DarkRP module, need to connect ChatCommands module' ) return end
 
 local Add = Ambi.ChatCommands.AddCommand

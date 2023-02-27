@@ -1,7 +1,7 @@
 local C, SQL = Ambi.General.Global.Colors, Ambi.SQL
 local PLAYER = FindMetaTable( 'Player' )
 
--- --------------------------------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------------------------------------------------------------
 net.AddString( 'ambi_darkrp_police_send_info' )
 net.AddString( 'ambi_darkrp_police_arrest_show_time' )
 net.AddString( 'ambi_darkrp_police_arrest_remove_time' )
@@ -125,18 +125,18 @@ function Ambi.DarkRP.UnWanted( ePly, ePolice )
     return true
 end
 
-function Ambi.DarkRP.Warrant( ePly, ePolice, sText )
+function Ambi.DarkRP.Warrant( ePly, ePolice, sReason )
     if not IsValid( ePly ) or not ePly:IsPlayer() then return end
     if ePly:HasWarrant() then return end
-    if ( hook.Call( '[Ambi.DarkRP.CanWarrant]', nil, ePolice, ePly, sText ) == false ) then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanWarrant]', nil, ePolice, ePly, sReason ) == false ) then return end
 
-    sText = sText or Ambi.DarkRP.Config.police_system_warrant_reason
+    sReason = sReason or Ambi.DarkRP.Config.police_system_warrant_reason
 
     ePly.nw_HasWarrant = true
 
     net.Start( 'ambi_darkrp_police_send_info' )
         net.WriteString( 'Подан Ордер на Обыск у '..ePly:Nick() ) 
-        net.WriteString( sText )
+        net.WriteString( sReason )
     net.Broadcast()
 
     timer.Create( 'AmbiDarkRPWarrant['..ePly:SteamID()..']', Ambi.DarkRP.Config.police_system_warrant_time, 1, function()

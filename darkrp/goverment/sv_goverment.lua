@@ -6,6 +6,7 @@ local lockdown = CreateConVar( 'ambi_darkrp_lockdown', 0, FCVAR_REPLICATED )
 
 function Ambi.DarkRP.SetLockdown( bStart )
     if ( bStart == nil ) then bStart = false end
+    if ( lockdown:GetBool() and bStart ) or ( not lockdown:GetBool() and not bStart ) then return end
 
     lockdown:SetBool( bStart )
 
@@ -45,9 +46,13 @@ function PLAYER:RemoveFakeLicenseGun()
     hook.Call( '[Ambi.DarkRP.RemoveFakeLicenseGun]', nil, self )
 end
 
+function PLAYER:RemoveLicenses()
+    self:RemoveRealLicenseGun()
+    self:RemoveFakeLicenseGun()
+end
+
 hook.Add( 'PlayerDeath', 'Ambi.DarkRP.RemoveLicenseGun', function( ePly ) 
-    ePly:RemoveRealLicenseGun()
-    ePly:RemoveFakeLicenseGun()
+    ePly:RemoveLicenses()
 end )
 
 -- -------------------------------------------------------------------------------------------------------
@@ -68,7 +73,7 @@ function Ambi.DarkRP.SetLaw( nID, sText )
 end
 
 function Ambi.DarkRP.ClearLaws()
-    for i = 1, 9 do
+    for i = 1, #Ambi.DarkRP.Config.goverment_laws_default do
         Ambi.DarkRP.laws[ i ] = Ambi.DarkRP.Config.goverment_laws_default[ i ]
     end
 

@@ -18,15 +18,17 @@ function PLAYER:DropActiveWeapon()
     if ( hook.Call( '[Ambi.DarkRP.CanDropWeapon]', nil, self, class, weapon ) == false ) then return end
     
     local pos, ang = GetFrontPos( self, MAX_POS ), self:EyeAngles()
+    local ammo = self:GetAmmoCount( weapon:GetPrimaryAmmoType() ) + weapon:Clip1()
+
     local ent = ents.Create( 'spawned_weapon' )
     ent:SetPos( pos )
     ent:SetAngles( ang )
-    ent:SetInfo( class, weapon:GetModel(), weapon:Clip1() )
+    ent:SetInfo( class, weapon:GetModel(), ammo )
     ent:Spawn()
 
     local weapon = self:GetWeapon( class )
 
-    self:SetAmmo( -weapon:Clip1(), weapon:GetPrimaryAmmoType() )
+    self:SetAmmo( -ammo, weapon:GetPrimaryAmmoType() )
     self:StripWeapon( class )
 
     if Ambi.DarkRP.Config.weapon_drop_has_owner then 

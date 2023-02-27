@@ -19,6 +19,9 @@ if CFG_CMDS[ '/me' ] then
             text = text..' '..v
         end
         
+		if ePly.gimp then
+			return
+		end
         for _, ply in ipairs( ents.FindInSphere( ePly:GetPos(), Ambi.DarkRP.Config.chat_max_length ) ) do
             if ply:IsPlayer() then ply:ChatSend( Ambi.DarkRP.Config.chat_commands_color_me, ePly:Nick()..text ) end
         end
@@ -37,6 +40,9 @@ if CFG_CMDS[ '/try' ] then
             text = text..' '..v
         end
         
+		if ePly.gimp then
+			return
+		end
         local result = math.random( 0, 1 )
         local color, posttext = ( result == 1 ) and C.AMBI_GREEN or C.AMBI_RED, ( result == 1 ) and 'Удачно' or 'Неудачно'
         for _, ply in ipairs( ents.FindInSphere( ePly:GetPos(), Ambi.DarkRP.Config.chat_max_length ) ) do
@@ -57,6 +63,9 @@ if CFG_CMDS[ '/do' ] then
             text = text..' '..v
         end
         
+		if ePly.gimp then
+			return
+		end
         for _, ply in ipairs( ents.FindInSphere( ePly:GetPos(), Ambi.DarkRP.Config.chat_max_length ) ) do
             if ply:IsPlayer() then ply:ChatSend( Ambi.DarkRP.Config.chat_commands_color_do, text..' ['..ePly:Nick()..']' ) end
         end
@@ -74,7 +83,10 @@ if CFG_CMDS[ '/ooc' ] then
 
             text = text..' '..v
         end
-        
+
+		if ePly.gimp then
+			return
+		end
         for _, ply in ipairs( player.GetAll() ) do
             ply:ChatSend( C.AMBI_RED, '[OOC] ', Ambi.DarkRP.Config.chat_commands_color_ooc, '['..ePly:Nick()..']'..text )
         end
@@ -92,8 +104,12 @@ if CFG_CMDS[ '//' ] then
 
             text = text..' '..v
         end
-        
+		
+		if ePly.gimp then
+			return
+		end
         for _, ply in ipairs( player.GetAll() ) do
+
             ply:ChatSend( C.AMBI_RED, '[OOC] ', Ambi.DarkRP.Config.chat_commands_color_ooc, '['..ePly:Nick()..']'..text )
         end
     end )
@@ -108,6 +124,9 @@ local function Whisper( ePly, tArgs )
         text = text..' '..v
     end
     
+		if ePly.gimp then
+			return
+		end
     for _, ply in ipairs( ents.FindInSphere( ePly:GetPos(), Ambi.DarkRP.Config.chat_max_length_whisper ) ) do
         if ply:IsPlayer() then ply:ChatSend( Ambi.DarkRP.Config.chat_commands_color_whisper, Ambi.DarkRP.Config.chat_title_whisper..' ['..ePly:Nick()..']'..text ) end
     end
@@ -130,6 +149,9 @@ local function Scream( ePly, tArgs )
         text = text..' '..v
     end
     
+		if ePly.gimp then
+			return
+		end
     for _, ply in ipairs( ents.FindInSphere( ePly:GetPos(), Ambi.DarkRP.Config.chat_max_length_scream ) ) do
         if ply:IsPlayer() then ply:ChatSend( Ambi.DarkRP.Config.chat_commands_color_scream, Ambi.DarkRP.Config.chat_title_scream..' ['..ePly:Nick()..']'..text ) end
     end

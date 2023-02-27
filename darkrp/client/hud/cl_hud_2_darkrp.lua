@@ -1,14 +1,19 @@
-local C, GUI, Draw = Ambi.Packages.Out( '@d' )
-local W, H = ScrW(), ScrH()
-local HUD = Ambi.Base.HUD
-local COLOR_PANEL = Color( 20, 20, 20, 200 )
+if not Ambi.MultiHUD then return end
 
-local BLOCK_GUNS = {
+local C, GUI, Draw, UI, Lang = Ambi.Packages.Out( '@d, language' )
+local Add = Ambi.MultiHUD.Add
+
+local W, H = ScrW(), ScrH()
+local W_PANELS = 200
+local COLOR_PANEL = Color( 20, 20, 20, 200 )
+local COLOR_BLOOD = Color( 137, 3 ,3 ,209 )
+local COLOR_DARK_BLUE = Color( 56, 70 ,123 ,209)
+local COLOR_SATIETY = ColorAlpha( C.AU_SOFT_ORANGE, 50 )
+local BLOCK_WEAPONS = {
     [ 'weapon_physcannon' ] = true,
     [ 'weapon_bugbait' ] = true,
     [ 'weapon_crowbar' ] = true,
     [ 'weapon_stunstick' ] = true,
-    [ 'gmod_camera' ] = true,
     [ 'weapon_fists' ] = true,
     [ 'weapon_physgun' ] = true,
     [ 'gmod_tool' ] = true,
@@ -19,59 +24,103 @@ local BLOCK_GUNS = {
     [ 'unarrest_stick' ] = true,
     [ 'weaponchecker' ] = true,
     [ 'keypadchecker' ] = true,
+    [ 'gmod_camera' ] = true,
 }
 
-HUD.Add( 2, 'Minimalistic DarkRP HUD', 'Ambi', function()
+local MAT_LICENSE_GUN = Material( 'icon16/page_white_text.png' )
+local MAT_WANTED = Material( 'icon16/star.png' )
+
+-- --------------------------------------------------------------------------------------------------------------------------------------------
+UI.AddFont( 'AmbiMinHUD', { font = 'Franklin Gothic Demi', size = 48, extended = true, weight = 100 } )
+UI.AddFont( 'AmbiMinHUDAmmo', { font = 'Franklin Gothic Demi', size = 64, extended = true } )
+UI.AddFont( 'AmbiMinHUDHealth', { font = 'Franklin Gothic Demi', size = 32, extended = true } )
+
+-- --------------------------------------------------------------------------------------------------------------------------------------------
+Add( 2, 'Minimalistic HUD', 'Ambi', function()
     if not Ambi.DarkRP.Config.hud_enable then return end
+    if not LocalPlayer():Alive() then return end
+
+    local offset_y = 10
     
-    surface.SetFont( '28 Ambi' )
-    local xchar_nick, _ = surface.GetTextSize( LocalPlayer():Nick() )
+    -- Nick
+    local nick = LocalPlayer():Nick()
+    local w_nick = Draw.GetTextSizeX( 'AmbiMinHUD', nick ) + 8
+    Draw.Box( w_nick, 36, 10, H - 36 - offset_y, COLOR_PANEL, 4 )
+    Draw.SimpleText( 14, H - 4, nick, 'AmbiMinHUD', C.WHITE, 'bottom-left', 1, C.ABS_BLACK )
 
-    draw.RoundedBox( 4, 4, H-36, xchar_nick+20, 32, COLOR_PANEL )
-    draw.SimpleTextOutlined( LocalPlayer():Nick(), '28 Ambi Bold', 8, H-34, C.ABS_WHITE, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, 1, C.ABS_BLACK )
+    -- Money
+    if ( LocalPlayer():GetMoney() > 0 ) then
+        local text = string.Comma( LocalPlayer():GetMoney()..Ambi.DarkRP.Config.money_currency_symbol )
+        local W_PANELS = Draw.GetTextSizeX( 'AmbiMinHUDHealth', text )
 
-    local text = LocalPlayer():TeamName()
-    local xw = Draw.GetTextSizeX( '28 Ambi', text )
-    Draw.Box( xw + 8, 32, 4, H - 36 * 2, COLOR_PANEL, 4 )
-    Draw.SimpleText( 8, H - 35 * 2, text, '28 Ambi', LocalPlayer():TeamColor(), 'top-left', 1, C.ABS_BLACK )
+        Draw.Box( W_PANELS + 8, 36, 10 + w_nick + 4, H - 36 - offset_y, COLOR_PANEL, 4 )
+        Draw.SimpleText( 14 + w_nick + 4, H - offset_y, text, 'AmbiMinHUDHealth', C.GREEN, 'bottom-left', 1, C.ABS_BLACK )
+    end 
 
-    local text = LocalPlayer():GetMoney()..Ambi.DarkRP.Config.money_currency_symbol
-    local xw = Draw.GetTextSizeX( '28 Ambi', text )
-    Draw.Box( xw + 8, 32, 4, H - 36 * 3, COLOR_PANEL, 4 )
-    Draw.SimpleText( 8, H - 35 * 3, text, '28 Ambi', C.AMBI_GREEN, 'top-left', 1, C.ABS_BLACK )
+    offset_y = offset_y + 36 + 4
 
-    local health = LocalPlayer():Health()
-    if ( health > 0 ) then
-        local xw_hp = Draw.GetTextSizeX( '28 Ambi', LocalPlayer():Health() )
+    -- Job
+    local text = LocalPlayer():GetJobName()
+    local w = Draw.GetTextSizeX( 'AmbiMinHUD', text ) + 8
+    Draw.Box( w, 36, 10, H - 36 - offset_y, COLOR_PANEL, 4 )
+    Draw.SimpleText( 14, H - offset_y + 4, text, 'AmbiMinHUD', LocalPlayer():GetJobColor(), 'bottom-left', 1, C.ABS_BLACK )
 
-        draw.RoundedBox( 4, 4, H - 36 * 4, xw_hp+4, 32, COLOR_PANEL )
-        draw.SimpleTextOutlined( LocalPlayer():Health(), '28 Ambi', 6, H - 35 * 4, C.FLAT_RED, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, 1, C.ABS_BLACK )
-
-        local armor = LocalPlayer():Armor()
-        if ( armor > 0 ) then
-            local _xw = Draw.GetTextSizeX( '28 Ambi', armor )
-
-            Draw.Box( _xw + 8, 32, 4 + xw_hp + 8, H - 36 * 4, COLOR_PANEL, 4 )
-            Draw.SimpleText( 8 + xw_hp + 8, H - 35 * 4, armor, '28 Ambi', C.AMBI_BLUE, 'top-left', 1, C.ABS_BLACK )
-        end
+    if LocalPlayer():HasLicenseGun() then
+        Draw.Material( 32, 32, w + 10, H - offset_y - 32, MAT_LICENSE_GUN, LocalPlayer():HasRealLicenseGun() and C.AU_YELLOW or C.AMBI_BLOOD )
     end
 
-    if GetConVar( 'ambi_darkrp_lockdown' ):GetBool() then
-        Draw.SimpleText( 4, 4, '• Комендантский Час!', '28 Ambi', C.AMBI_RED, 'top-left', 1, C.ABS_BLACK )
+    if LocalPlayer():IsWanted() then
+        Draw.Material( 32, 32, w + 44, H - offset_y - 32, MAT_WANTED )
+    end
+    
+    if Ambi.DarkRP.IsLockdown() then
+        Draw.SimpleText( 4, 0, '• Комендантский Час!', UI.SafeFont( '36 Ambi' ), C.AMBI_RED, 'top-left', 1, C.ABS_BLACK )
+    end
+
+    -- Health
+    if LocalPlayer():Alive() then
+        offset_y = offset_y + 36 + 4
+
+        local hp, max = LocalPlayer():Health(), LocalPlayer():GetMaxHealth()
+        local w = ( hp > max ) and W_PANELS or ( W_PANELS / max ) * hp
+        local color = ( hp <= ( max / 3 ) ) and ColorAlpha( COLOR_BLOOD, 200 + math.sin( 360 + CurTime() * 16 ) * 160 ) or COLOR_BLOOD
+        local color2 = ( hp <= ( max / 3 ) ) and ColorAlpha( C.RED, 200 + math.sin( 360 + CurTime() * 16 ) * 160 ) or C.RED
+
+        Draw.Box( W_PANELS + 8, 36, 10, H - 36 - offset_y, COLOR_PANEL, 4 )
+        Draw.Box( W_PANELS, 36 - 8, 10 + 4, H - 36 - offset_y + 4, color, 4 )
+        Draw.Box( w, 36 - 8, 10 + 4, H - 36 - offset_y + 4, color2, 4 )
+
+        local armor, max_arm = LocalPlayer():Armor(), LocalPlayer():GetMaxArmor()
+        if ( armor > 0 ) then
+            local w = ( armor > max_arm ) and W_PANELS or ( W_PANELS / max_arm ) * armor
+
+            Draw.Box( w, 14 - 8, 10 + 4, H - 14 - offset_y + 4 , C.BLUE, 4 )
+            Draw.SimpleText( 32, H - offset_y - 10, armor, UI.SafeFont( '24 Ambi' ), C.ABS_WHITE, 'bottom-center', 1, C.ABS_BLACK )
+        end
+
+        Draw.SimpleText( 120, H - offset_y, hp, 'AmbiMinHUDHealth', C.ABS_WHITE, 'bottom-center', 1, C.ABS_BLACK )
+    end
+
+    local value, max = LocalPlayer():GetSatiety(), LocalPlayer():GetMaxSatiety()
+    if Ambi.DarkRP.Config.hunger_enable then
+        offset_y = offset_y + 36 + 4
+        local w = ( value > max ) and W_PANELS or ( W_PANELS / max ) * value
+
+        Draw.Box( W_PANELS + 8, 36, 10, H - 36 - offset_y, COLOR_PANEL, 4 )
+        Draw.Box( W_PANELS, 36 - 8, 10 + 4, H - 36 - offset_y + 4, COLOR_SATIETY, 4 )
+        Draw.Box( w, 36 - 8, 10 + 4, H - 36 - offset_y + 4, C.AU_SOFT_ORANGE, 4 )
+        Draw.SimpleText( 120, H - offset_y, value, 'AmbiMinHUDHealth', C.ABS_WHITE, 'bottom-center', 1, C.ABS_BLACK )
     end
 
     local wep = LocalPlayer():GetActiveWeapon()
-    if not IsValid( wep ) then return end
-    if BLOCK_GUNS[ wep:GetClass() ] then return end
+    if IsValid( wep ) and not BLOCK_WEAPONS[ wep:GetClass() ] then 
+        local clip1, ammo1, ammo2 = wep:Clip1(), LocalPlayer():GetAmmoCount( wep:GetPrimaryAmmoType() ), LocalPlayer():GetAmmoCount( wep:GetSecondaryAmmoType() )
+        local ammo = clip1..' / '..ammo1
+        if ammo2 and ( ammo2 > 0 ) then 
+            ammo = '('..ammo2..') '..clip1..' / '..ammo1
+        end
 
-    local clip1, ammo1, ammo2 = wep:Clip1(), LocalPlayer():GetAmmoCount( wep:GetPrimaryAmmoType() ), LocalPlayer():GetAmmoCount( wep:GetSecondaryAmmoType() )
-    local ammo = clip1..' / '..ammo1
-    local x = Draw.GetTextSizeX( '46 Ambi', ammo ) + 14
-    if ammo2 and ( ammo2 > 0 ) then 
-        ammo = '('..ammo2..') '..clip1..' / '..ammo1
-        x = Draw.GetTextSizeX( '46 Ambi', ammo ) + 10
+        local color = ( ammo1 == 0 and clip1 == 0 ) and C.AMBI_GRAY or C.WHITE
+        Draw.SimpleText( W - 4, H - 1, ammo, 'AmbiMinHUDAmmo', color, 'bottom-right', 1, C.ABS_BLACK )
     end
-
-    draw.RoundedBox( 4, W - x, H - 40 - 4, x - 4, 40, COLOR_PANEL )
-    draw.SimpleTextOutlined( ammo, '46 Ambi', W - 8, H - 41 - 4, C.AMBI_WHITE, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, 1, C.ABS_BLACK )
 end )
