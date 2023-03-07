@@ -247,17 +247,19 @@ function PLAYER:SetJobHands()
     if ( hook.Call( '[Ambi.DarkRP.CanSetJobHands]', nil, self, model_name, hands_info, hands ) == false ) then return end
 
     if IsValid( hands ) and hands_info and istable( hands_info ) then
+        self.workaround_can_pickup_weapon = true --! for job.can_pickup_weapons
+
         hands:SetModel( hands_info.model )
         hands:SetSkin( hands_info.skin )
         hands:SetBodyGroups( hands_info.body )
 
         hook.Call( '[Ambi.DarkRP.SetJobHands]', nil, self, model_name, hands_info, hands )
+
+        self.workaround_can_pickup_weapon = nil
     end
 end
 
 function PLAYER:SetJobFeatures()
-    if not IsValid( self ) then return end
-
     local job = Ambi.DarkRP.GetJob( self:GetJob() )
     if not job then return end
     if ( hook.Call( '[Ambi.DarkRP.CanSetJobFeatures]', nil, self, job ) == false ) then return end
@@ -333,6 +335,8 @@ function PLAYER:GiveWeaponsJob()
     if not weps then return end
     if ( hook.Call( '[Ambi.DarkRP.CanGiveWeaponsJob]', nil, self, weps, job ) == false ) then return end
 
+    self.workaround_can_pickup_weapon = true --! for job.can_pickup_weapons
+
     self:StripWeapons()
 
     for _, class in ipairs( weps ) do 
@@ -342,6 +346,8 @@ function PLAYER:GiveWeaponsJob()
 
     hook.Call( '[Ambi.DarkRP.PlayerLoadout]', nil, self, weps ) -- old
     hook.Call( '[Ambi.DarkRP.GaveWeaponsJob]', nil, self, weps, job ) -- new
+
+    self.workaround_can_pickup_weapon = nil
 end
 
 function PLAYER:DemoteJob( bForce, eCaller )

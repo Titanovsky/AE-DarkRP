@@ -208,7 +208,7 @@ hook.Add( 'PlayerCanPickupWeapon', 'Ambi.DarkRP.PropertyForJobs', function( ePly
     local job = ePly:GetJobTable()
     if not job then return end
 
-    if ( job.can_pickup_weapons == false ) then return false end
+    if ( job.can_pickup_weapons == false ) and not ePly.workaround_can_pickup_weapon  and not ePly:IsSuperAdmin() then return false end
 end )
 
 hook.Add( '[Ambi.DarkRP.CanBuyShopItem]', 'Ambi.DarkRP.PropertyForJobs', function( ePly ) 
