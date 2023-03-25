@@ -132,7 +132,7 @@ function PLAYER:isChief()
 end
 
 function PLAYER:warrant( ePolice, sReason )
-    return Ambi.DarkRP.WarrantPlayer( self, ePolice, sReason )
+    return Ambi.DarkRP.Warrant( self, ePolice, sReason )
 end
 
 function PLAYER:unWarrant( ePolice )
@@ -140,19 +140,19 @@ function PLAYER:unWarrant( ePolice )
 end
 
 function PLAYER:wanted( ePolice, sReason, nTime )
-    return Ambi.DarkRP.WantedPlayer( self, ePolice, sReason, nTime )
+    return Ambi.DarkRP.Wanted( self, ePolice, sReason, nTime )
 end
 
 function PLAYER:unWanted( ePolice )
-    return Ambi.DarkRP.UnWantedPlayer( self )
+    return Ambi.DarkRP.UnWanted( self )
 end
 
 function PLAYER:arrest( nTime, ePolice )
-    return Ambi.DarkRP.ArrestPlayer( self, ePolice, '', nTime )
+    return Ambi.DarkRP.Arrest( self, ePolice, '', nTime )
 end
 
 function PLAYER:unArrest( ePolice )
-    return Ambi.DarkRP.UnArrestPlayer( self, ePolice )
+    return Ambi.DarkRP.UnArrest( self, ePolice )
 end
 
 function PLAYER:canAfford( nPrice )
