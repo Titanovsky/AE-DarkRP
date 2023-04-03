@@ -285,7 +285,7 @@ function PLAYER:SetJobFeatures()
 
     if job.material then self:SetMaterial( job.material ) end
 
-    if job.model_scale then self:SetModelScale( job.model_scale ) end
+    if job.model_scale then self:SetModelScale( job.model_scale ) else self:SetModelScale( Ambi.DarkRP.Config.player_base_scale ) end
 
     if job.bodygroups then
         for id, value in pairs( job.bodygroups ) do
@@ -293,7 +293,7 @@ function PLAYER:SetJobFeatures()
         end
     end
 
-    if job.skin then self:SetSkin( job.skin ) end
+    if job.skin then self:SetSkin( job.skin ) else self:SetSkin( Ambi.DarkRP.Config.player_base_skin ) end
 
     if job.health or job.hp then self:SetHealth( job.health or job.hp ) end
     if job.max_health or job.max_hp then self:SetMaxHealth( job.max_health or job.max_hp ) end
