@@ -8,14 +8,17 @@ hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SetFirstJob', function( ePly )
 
     timer.Simple( 0.02, function()
         if not IsValid( ePly ) then return end
-        if ePly:IsBot() then ePly:SetJob( Ambi.DarkRP.Config.jobs_class ) return end
+        if ePly:IsBot() then 
+            ePly:SetJob( Ambi.DarkRP.Config.jobs_class, true ) 
+            return 
+        end
 
         if Ambi.DarkRP.Config.jobs_permanent_enable then 
             local class = SQL.Select( DB, 'Class', 'SteamID', ePly:SteamID() )
 
-            if class then ePly:SetJob( class ) else ePly:SetJob( Ambi.DarkRP.Config.jobs_class ) end
+            if class then ePly:SetJob( class ) else ePly:SetJob( Ambi.DarkRP.Config.jobs_class, true ) end
         else
-            ePly:SetJob( Ambi.DarkRP.Config.jobs_class )
+            ePly:SetJob( Ambi.DarkRP.Config.jobs_class, true )
         end
 
         hook.Call( '[Ambi.DarkRP.SetFirstJob]', nil, ePly )
@@ -23,7 +26,7 @@ hook.Add( 'PlayerInitialSpawn', 'Ambi.DarkRP.SetFirstJob', function( ePly )
         timer.Simple( 1, function()
             if not IsValid( ePly ) then return end
 
-            if ePly:GetJobTable().is_fake then ePly:SetJob( Ambi.DarkRP.Config.jobs_class ) end
+            if ePly:GetJobTable().is_fake then ePly:SetJob( Ambi.DarkRP.Config.jobs_class, true ) end
         end )
     end )
 end )
@@ -92,7 +95,7 @@ hook.Add( 'PlayerSay', 'Ambi.DarkRP.SetJob', function( ePly, sText )
     if not job then return end
 
     if ( job.can_join_command == false ) then ePly:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Нельзя вступить в эту работу через команду!' ) return '' end
-    if ( hook.Call( '[Ambi.DarkRP.CanChangeJobByCommand]', nil, ePly, class, job ) == false ) then return end
+    if ( hook.Call( '[Ambi.DarkRP.CanChangeJobByCommand]', nil, ePly, class, job ) == false ) then return '' end
 
     ePly:SetJob( class )
 

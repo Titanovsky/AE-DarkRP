@@ -19,7 +19,7 @@ function PLAYER:SetRPName( sRPName )
 	
     local sid = self:SteamID()
 
-    if not self:IsBot() then 
+    if not self:IsBot() then
         SQL.Update( DB, 'RPName', sRPName, 'SteamID', sid ) 
     end
 

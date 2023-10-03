@@ -28,8 +28,8 @@ function PLAYER:SetJob( sClass, bForce, bRespawn )
             end
         end
 
-        if job.vip and not Ambi.DarkRP.Config.jobs_vip_ranks[ self:GetUserRank() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваш ранг не подходит под VIP!' ) return false end
-        if job.premium and not Ambi.DarkRP.Config.jobs_premium_ranks[ self:GetUserRank() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваш ранг не подходит под Premium!' ) return false end
+        if job.vip and not Ambi.DarkRP.Config.jobs_vip_ranks[ self:GetUserGroup() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваш ранг не подходит под VIP!' ) return false end
+        if job.premium and not Ambi.DarkRP.Config.jobs_premium_ranks[ self:GetUserGroup() ] then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Ваш ранг не подходит под Premium!' ) return false end
 
         if job.admin then
             if ( job.admin == 1 ) and not self:IsAdmin() then self:ChatSend( C.ERROR, '•  ', C.ABS_WHITE, 'Доступно только для админских ранов!' ) return false

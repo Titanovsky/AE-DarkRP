@@ -64,6 +64,10 @@ function Ambi.DarkRP.OpenContextMenu()
     amb_context_menu.Paint = function( self, w, h )
         draw.RoundedBox( 0, 0, 0, w, h, COLOR_CONTEXT )
     end
+
+    amb_context_menu.OnRemove = function()
+        if ValidPanel( pnl2 ) then pnl2:Remove() end
+    end
     
     pnl = amb_context_menu
 

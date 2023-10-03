@@ -20,13 +20,15 @@ hook.Add( 'PostDrawTranslucentRenderables', 'Ambi.DarkRP.3DHud', function()
             if Ambi.DarkRP.Config.hud_3d_show_name then Draw.SimpleText( 4, 6, ePly:Name(), UI.SafeFont( '32 Ambi' ), C.ABS_WHITE, 'center', 1, C.ABS_BLACK ) end
             if Ambi.DarkRP.Config.hud_3d_show_job then Draw.SimpleText( 4, 30, ePly:JobName(), UI.SafeFont( '24 Ambi' ), ePly:TeamColor(), 'center', 1, C.ABS_BLACK ) end
 
-            local hp, max = ( ePly:Health() >= 100 ) and 100 or ePly:Health()
             if Ambi.DarkRP.Config.hud_3d_show_health and ( ePly:Health() > 0 ) then 
+                local hp = ( ePly:Health() >= 100 ) and 100 or ePly:Health()
+
                 Draw.Box( hp, 8, -46, 46, C.AMBI_RED ) 
             end
 
-            local armor, max = ( ePly:Armor() >= 100 ) and 100 or ePly:Armor(), ePly:GetMaxArmor()
             if Ambi.DarkRP.Config.hud_3d_show_armor and ( ePly:Armor() > 0 ) then 
+                local armor = ( ePly:Armor() >= 100 ) and 100 or ePly:Armor()
+
                 Draw.Box( armor, 4, -46, 52, C.AMBI_BLUE ) 
             end
 

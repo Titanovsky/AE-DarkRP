@@ -1,4 +1,4 @@
-Ambi.General.CreateModule( 'DarkRP', '2.0.1', 'https://steamcommunity.com/id/titanovsky/' )
+Ambi.General.CreateModule( 'DarkRP' ) -- by https://steamcommunity.com/id/titanovsky/
 
 --* ====================================================================================================================================================== --
 Ambi.DarkRP.Config.restrict_can_suicide = false -- Можно умирать через kill?
