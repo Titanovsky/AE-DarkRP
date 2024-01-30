@@ -1,5 +1,4 @@
-local VERSION = '2.0.1'
---local VERSION = '2.1'
+local VERSION = '2.1'
 
 Ambi.General.CheckVersion( 'DarkRP', VERSION, 'https://raw.githubusercontent.com/Titanovsky/AE-DarkRP/main/VERSION.md', 60 * 60, function( sBody ) 
     if SERVER then
